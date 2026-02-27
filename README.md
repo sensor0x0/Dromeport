@@ -12,6 +12,12 @@ A simple frontend downloader with many configurable features designed for Navidr
 
 ## Setup
 
+### Docker
+
+Coming soon. You will be able to simply append Dromeport to your existing Navidrome Docker compose file.
+
+### Manual
+
 ```
 $ git clone https://github.com/sensor0x0/Dromeport.git
 $ cd Dromeport
