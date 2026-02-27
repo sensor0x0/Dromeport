@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 
 interface NavbarProps {
-  activeTab: "download" | "config";
-  setActiveTab: (tab: "download" | "config") => void;
+  activeTab: "download" | "config" | "sync";
+  setActiveTab: (tab: "download" | "config" | "sync") => void;
 }
 
 export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
@@ -28,6 +28,15 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
               }`}
             >
               Download
+            </button>
+            <button
+              onClick={() => setActiveTab("sync")}
+              className={`cursor-pointer transition-colors hover:text-foreground/80 ${
+                activeTab === "sync" ? "text-foreground" : "text-foreground/60"
+              }`}
+            >
+              Synchronisation{" "}
+              <span className="text-[10px] text-muted-foreground font-normal">beta</span>
             </button>
             <button
               onClick={() => setActiveTab("config")}

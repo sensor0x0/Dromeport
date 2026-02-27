@@ -26,5 +26,8 @@ dromeport/.tsbuildinfo
 *.swp
 *.swo
 
+# Playlist sync data
+sync_playlists.json
+
 # Yes I used AI for parts. Sorry.
 repomix-output.xml

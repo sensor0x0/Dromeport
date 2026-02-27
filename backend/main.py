@@ -3,6 +3,7 @@ import json
 import os
 import pathlib
 import uuid
+from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI, HTTPException
@@ -12,10 +13,30 @@ from fastapi.staticfiles import StaticFiles
 
 from providers.ytmusic import download_ytmusic_stream
 from providers.spotify import download_spotify_stream
+from sync import SyncManager
 
-app = FastAPI()
 
 _active_jobs: dict[str, dict[str, Any]] = {}
+
+# Constants
+
+_SPOTIFLAC_PATH = os.environ.get("SPOTIFLAC_PATH", "").strip()
+_SPOTIFLAC_DIR = str(pathlib.Path(_SPOTIFLAC_PATH).parent) if _SPOTIFLAC_PATH else ""
+_IS_DOCKER = bool(_SPOTIFLAC_PATH)
+
+sync_manager = SyncManager(spotiflac_path=_SPOTIFLAC_PATH)
+
+
+# Lifespan - start and stop the scheduler with the app
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    sync_manager.start()
+    yield
+    sync_manager.stop()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,12 +45,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Constants
-
-_SPOTIFLAC_PATH = os.environ.get("SPOTIFLAC_PATH", "").strip()
-_SPOTIFLAC_DIR = str(pathlib.Path(_SPOTIFLAC_PATH).parent) if _SPOTIFLAC_PATH else ""
-_IS_DOCKER = bool(_SPOTIFLAC_PATH)
 
 
 # Startup config
@@ -273,6 +288,49 @@ async def cancel_download(job_id: str, library_path: str = ""):
         cleaned = _cleanup_partial_files(job_library_path)
 
     return {"status": "cancelled", "partial_files_deleted": cleaned}
+
+
+# Sync playlists
+
+@app.get("/api/sync/playlists")
+async def list_sync_playlists():
+    return sync_manager.list_playlists()
+
+
+@app.post("/api/sync/playlists")
+async def add_sync_playlist(data: dict):
+    try:
+        playlist = sync_manager.add_playlist(data)
+        return playlist
+    except (KeyError, ValueError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+@app.put("/api/sync/playlists/{pid}")
+async def update_sync_playlist(pid: str, data: dict):
+    result = sync_manager.update_playlist(pid, data)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Playlist not found.")
+    return result
+
+
+@app.delete("/api/sync/playlists/{pid}")
+async def delete_sync_playlist(pid: str):
+    if not sync_manager.delete_playlist(pid):
+        raise HTTPException(status_code=404, detail="Playlist not found.")
+    return {"status": "deleted"}
+
+
+@app.get("/api/sync/playlists/{pid}/run")
+async def run_sync_playlist(pid: str):
+    playlist = sync_manager.get_playlist(pid)
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found.")
+    return StreamingResponse(
+        sync_manager.run_sync_stream(pid),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # Static files

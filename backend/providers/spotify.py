@@ -169,15 +169,19 @@ async def _spotiflac_stream(
         if is_playlist and playlist_mode == "folder" and playlist_folder:
             for entry in list(pathlib.Path(output_dir).iterdir()):
                 if entry.is_dir():
-                    flac_files_inside = list(entry.rglob("*.flac"))
-                    if flac_files_inside:
+                    any_files_inside = list(entry.rglob("*"))
+                    if any(f.is_file() for f in any_files_inside):
                         yield f"data: 🔧 Flattening SpotiFLAC subfolder '{entry.name}' → '{playlist_folder}'...\n\n"
                         for item in entry.iterdir():
                             dest = pathlib.Path(output_dir) / item.name
-                            # Avoid clobbering; rename if clash
                             if dest.exists():
-                                dest = pathlib.Path(output_dir) / (item.stem + "_1" + item.suffix)
-                            shutil.move(str(item), str(dest))
+                                # Already have this track, just drop the re-downloaded copy
+                                try:
+                                    item.unlink()
+                                except OSError:
+                                    pass
+                            else:
+                                shutil.move(str(item), str(dest))
                         try:
                             entry.rmdir()
                         except OSError:
