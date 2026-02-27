@@ -25,23 +25,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Constants ─────────────────────────────────────────────────────────────────
+# Constants
 
 _SPOTIFLAC_PATH = os.environ.get("SPOTIFLAC_PATH", "").strip()
 _SPOTIFLAC_DIR = str(pathlib.Path(_SPOTIFLAC_PATH).parent) if _SPOTIFLAC_PATH else ""
 _IS_DOCKER = bool(_SPOTIFLAC_PATH)
 
 
-# ── Startup config endpoint ───────────────────────────────────────────────────
+# Startup config
 
 @app.get("/api/config")
 async def get_config():
-    """
-    Return all environment-driven configuration the frontend needs at startup:
-      libraries    — list of {path, defaultName} from DROMEPORT_LIBRARY_* env vars
-      spotiflacPath — pre-installed launcher path (empty outside Docker)
-      isDocker     — convenience boolean
-    """
     libraries: list[dict[str, str]] = []
     i = 1
     while True:
@@ -66,12 +60,10 @@ async def get_config():
     }
 
 
-# ── Tool versions ─────────────────────────────────────────────────────────────
+# Tool version
 
 @app.get("/api/tools/versions")
 async def tools_versions():
-    """Return current installed versions of yt-dlp and SpotiFLAC."""
-
     async def run_cmd(*cmd: str) -> str:
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -100,16 +92,10 @@ async def tools_versions():
     }
 
 
-# ── Tool updater (streaming SSE) ──────────────────────────────────────────────
+# Tool updater
 
 @app.get("/api/tools/update")
 async def update_tools():
-    """
-    Stream live update output via Server-Sent Events:
-      • yt-dlp   → pip install -U yt-dlp
-      • SpotiFLAC → git pull  +  pip install -r requirements.txt
-    """
-
     async def stream() -> AsyncGenerator[str, None]:
 
         async def run_streaming(*cmd: str) -> AsyncGenerator[str, None]:
@@ -126,7 +112,7 @@ async def update_tools():
                     yield f"data: {line}\n\n"
             await proc.wait()
 
-        # ── yt-dlp ────────────────────────────────────────────────────────────
+        # yt-dlp
         yield "data: ┌─ Updating yt-dlp ───────────────────────────────────\n\n"
         try:
             async for chunk in run_streaming(
@@ -139,9 +125,9 @@ async def update_tools():
 
         yield "data: \n\n"
 
-        # ── SpotiFLAC ─────────────────────────────────────────────────────────
+        # SpotiFLAC
         if not _SPOTIFLAC_DIR or not pathlib.Path(_SPOTIFLAC_DIR).is_dir():
-            yield "data: ⚠️  SpotiFLAC directory not found — skipping.\n\n"
+            yield "data: ⚠️  SpotiFLAC directory not found - skipping.\n\n"
         else:
             yield "data: ┌─ Updating SpotiFLAC ────────────────────────────────\n\n"
             try:
@@ -174,7 +160,7 @@ async def update_tools():
     )
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# Helpers
 
 def _cleanup_partial_files(library_path: str) -> int:
     count = 0
@@ -191,7 +177,7 @@ def _cleanup_partial_files(library_path: str) -> int:
     return count
 
 
-# ── Download stream ───────────────────────────────────────────────────────────
+# Download stream
 
 @app.get("/api/download/stream")
 async def stream_download(
@@ -211,8 +197,6 @@ async def stream_download(
             error_stream("Invalid config payload."), media_type="text/event-stream"
         )
 
-    # In Docker mode: use the pre-installed SpotiFLAC if the user hasn't set a
-    # custom path. This means zero Spotify configuration is required out of the box.
     if _SPOTIFLAC_PATH and not config_dict.get("spotify", {}).get("spotiflacPath", "").strip():
         config_dict.setdefault("spotify", {})["spotiflacPath"] = _SPOTIFLAC_PATH
 
@@ -261,7 +245,7 @@ async def stream_download(
     )
 
 
-# ── Cancel ────────────────────────────────────────────────────────────────────
+# Cancel
 
 @app.delete("/api/download/{job_id}")
 async def cancel_download(job_id: str, library_path: str = ""):
@@ -291,15 +275,14 @@ async def cancel_download(job_id: str, library_path: str = ""):
     return {"status": "cancelled", "partial_files_deleted": cleaned}
 
 
-# ── Static files (Docker / production) ───────────────────────────────────────
-# Must come AFTER all /api/* routes so the SPA catch-all doesn't shadow them.
+# Static files
 
 _static_dir = pathlib.Path(__file__).parent / "static"
 if _static_dir.is_dir():
     app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="frontend")
 
 
-# ── Entrypoint ────────────────────────────────────────────────────────────────
+# Entry point
 
 if __name__ == "__main__":
     import uvicorn

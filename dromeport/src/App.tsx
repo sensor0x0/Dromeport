@@ -32,12 +32,9 @@ import {
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 
-// All API calls use relative URLs — works in both:
-//   development (Vite proxies /api/* → localhost:8080)
-//   Docker      (frontend + backend share the same port, no proxy needed)
 const API = "";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types
 
 type Provider = "Spotify" | "YouTube Music";
 type DownloadStatus = "downloading" | "done" | "error" | "cancelled";
@@ -110,7 +107,7 @@ const DEFAULT_CONFIG: AppConfig = {
   ytMusic: { quality: "opus", embedMetadata: true },
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 function isAbsolutePath(p: string): boolean {
   return p.startsWith("/") || /^[A-Za-z]:[/\\]/.test(p);
@@ -133,7 +130,7 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-// ── Queue card ────────────────────────────────────────────────────────────────
+// Queue card
 
 interface QueueCardProps {
   item: QueueItem;
@@ -286,7 +283,7 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
   );
 }
 
-// ── Playlist name modal ───────────────────────────────────────────────────────
+// Playlist modal
 
 interface PlaylistModalProps {
   url: string;
@@ -340,7 +337,7 @@ function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProp
   );
 }
 
-// ── Library name editor row ───────────────────────────────────────────────────
+// Library row
 
 interface LibraryRowProps {
   library: DockerLibrary;
@@ -403,7 +400,7 @@ function LibraryRow({ library, displayName, onRename }: LibraryRowProps) {
   );
 }
 
-// ── Tools update card ─────────────────────────────────────────────────────────
+// Update tools card
 
 interface ToolsCardProps {
   versions: ToolVersions | null;
@@ -469,7 +466,7 @@ function ToolsCard({ versions, onRefreshVersions }: ToolsCardProps) {
           </Button>
         </div>
         <CardDescription>
-          yt-dlp and SpotiFLAC are bundled in this image. Updates run inside the container — no rebuild needed.
+          yt-dlp and SpotiFLAC are bundled in this image. Updates run inside the container - no rebuild needed.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -524,7 +521,7 @@ function ToolsCard({ versions, onRefreshVersions }: ToolsCardProps) {
   );
 }
 
-// ── Main app ──────────────────────────────────────────────────────────────────
+// Main app
 
 function App() {
   const [activeTab, setActiveTab] = useState<"download" | "config">("download");
@@ -540,7 +537,7 @@ function App() {
   const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
   const [toolVersions, setToolVersions] = useState<ToolVersions | null>(null);
 
-  // Library display name overrides, persisted in localStorage
+  // Library display name overrides persisted in localStorage
   const [libraryNames, setLibraryNames] = useState<Record<string, string>>(() => {
     try {
       return JSON.parse(localStorage.getItem("dromeport-library-names") ?? "{}") as Record<string, string>;
@@ -568,7 +565,7 @@ function App() {
     } catch { return DEFAULT_CONFIG; }
   });
 
-  // ── Effects ───────────────────────────────────────────────────────────────
+  // Effects
 
   // Fetch server config on mount
   useEffect(() => {
@@ -582,10 +579,8 @@ function App() {
         }
       })
       .catch(() => {
-        // Backend unreachable in dev without the server running — that's fine.
         setServerConfig({ libraries: [], spotiflacPath: "", isDocker: false });
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch tool versions whenever the config tab is opened (or on mount)
@@ -618,7 +613,7 @@ function App() {
 
   useEffect(() => () => { eventSourceRef.current?.close(); }, []);
 
-  // ── Config helpers ────────────────────────────────────────────────────────
+  // Config helpers
 
   const setLibraryPath = (val: string) => {
     if (isAbsolutePath(val) || val === "") setPathError("");
@@ -640,7 +635,7 @@ function App() {
   const getDisplayName = (lib: DockerLibrary) =>
     libraryNames[lib.path] ?? lib.defaultName;
 
-  // ── Queue helpers ─────────────────────────────────────────────────────────
+  // Queue helpers
 
   const updateQueue = useCallback((id: string, updates: Partial<QueueItem>) => {
     setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, ...updates } : q)));
@@ -653,7 +648,7 @@ function App() {
   const clearCompleted = () =>
     setQueue((prev) => prev.filter((q) => q.status === "downloading"));
 
-  // ── Download ──────────────────────────────────────────────────────────────
+  // Download logic
 
   const startDownload = useCallback(
     (dlUrl: string, dlProvider: Provider, playlistFolder: string) => {
@@ -805,7 +800,7 @@ function App() {
 
   const hasCompleted = queue.some((q) => q.status !== "downloading");
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -824,7 +819,7 @@ function App() {
         <main className="flex justify-center px-4">
           <div className="flex flex-col items-center mt-[8vh] sm:mt-[12vh] w-full max-w-3xl">
 
-            {/* ── Download tab ── */}
+            {/* Download tab */}
             {activeTab === "download" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="w-full flex flex-col sm:flex-row gap-2">
@@ -892,7 +887,7 @@ function App() {
               </div>
             )}
 
-            {/* ── Config tab ── */}
+            {/* Configuration tab */}
             {activeTab === "config" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
@@ -1194,7 +1189,7 @@ function App() {
                   </CardContent>
                 </Card>
 
-                {/* Bundled tools card — only shown in Docker mode */}
+                {/* Bundled tools card - only shown in Docker mode */}
                 {isDockerMode && (
                   <ToolsCard versions={toolVersions} onRefreshVersions={fetchVersions} />
                 )}

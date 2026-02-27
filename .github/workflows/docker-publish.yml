@@ -6,12 +6,11 @@ on:
       - main
     tags:
       - "v*.*.*"
-  workflow_dispatch: # allow manual trigger from the Actions tab
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  # e.g. ghcr.io/sensor0x0/dromeport
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: dromeport  # lowercase
 
 jobs:
   build-and-push:
@@ -19,7 +18,7 @@ jobs:
 
     permissions:
       contents: read
-      packages: write # needed to push to ghcr.io
+      packages: write
 
     steps:
       - name: Checkout repository
@@ -36,7 +35,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/sensor0x0/${{ env.IMAGE_NAME }}
           tags: |
             # tag semver releases as vX.Y.Z and vX.Y
             type=semver,pattern={{version}}
@@ -56,6 +55,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Cache layers between runs using the registry itself
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/sensor0x0/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/sensor0x0/${{ env.IMAGE_NAME }}:buildcache,mode=max
