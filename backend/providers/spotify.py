@@ -1,9 +1,11 @@
 import asyncio
+import base64
 import json
 import os
 import pathlib
 import re
 import shutil
+import struct
 from typing import AsyncGenerator, Any
 
 def _is_playlist_url(url: str) -> bool:
@@ -104,7 +106,7 @@ async def _spotiflac_stream(
         yield f"data:   Output folder : {dest_note}\n\n"
     yield f"data: $ {' '.join(command)}\n\n"
     yield "data: \n\n"
-    yield "data: ⏳ SpotiFLAC is running. Output may appear in batches — this is normal for the binary.\n\n"
+    yield "data: ⏳ SpotiFLAC is running. Output may appear in batches - this is normal for the binary.\n\n"
 
     # Attempt to find playlist title (unlikely)
     if is_playlist and playlist_folder:
@@ -216,6 +218,7 @@ async def _spotiflac_stream(
                     else:  # opus
                         ffmpeg_cmd = [
                             "ffmpeg", "-y", "-i", str(flac_path),
+                            "-vn",
                             "-map_metadata", "0",
                             "-c:a", "libopus",
                             "-b:a", "320k",
@@ -230,6 +233,40 @@ async def _spotiflac_stream(
                         )
                         await proc.wait()
                         if proc.returncode == 0:
+                            # Embed cover art for opus via mutagen
+                            if output_format == "opus":
+                                try:
+                                    from mutagen.flac import FLAC
+                                    from mutagen.oggopus import OggOpus
+
+                                    flac_tags = FLAC(str(flac_path))
+                                    if flac_tags.pictures:
+                                        pic = flac_tags.pictures[0]
+
+                                        # Build METADATA_BLOCK_PICTURE binary structure
+                                        mime = pic.mime.encode("utf-8")
+                                        desc = pic.desc.encode("utf-8")
+                                        data = pic.data
+
+                                        block = struct.pack(">I", pic.type)
+                                        block += struct.pack(">I", len(mime)) + mime
+                                        block += struct.pack(">I", len(desc)) + desc
+                                        block += struct.pack(
+                                            ">IIIII",
+                                            pic.width, pic.height,
+                                            pic.depth, pic.colors,
+                                            len(data)
+                                        )
+                                        block += data
+
+                                        ogg = OggOpus(str(out_path))
+                                        ogg["metadata_block_picture"] = [
+                                            base64.b64encode(block).decode("ascii")
+                                        ]
+                                        ogg.save()
+                                except Exception as cover_err:
+                                    yield f"data:     ⚠️  Cover art embedding failed (file is still OK): {cover_err}\n\n"
+
                             flac_path.unlink()  # Delete original FLAC
                             transcoded += 1
                         else:
