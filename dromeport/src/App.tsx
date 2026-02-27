@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { SiSpotify, SiYoutubemusic, SiGithub } from "react-icons/si";
-import { X, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import {
+  X, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle,
+  AlertTriangle, Pencil, Check, Info, RefreshCw, Package,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,10 +32,31 @@ import {
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 
-// Types
+// All API calls use relative URLs — works in both:
+//   development (Vite proxies /api/* → localhost:8080)
+//   Docker      (frontend + backend share the same port, no proxy needed)
+const API = "";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type Provider = "Spotify" | "YouTube Music";
 type DownloadStatus = "downloading" | "done" | "error" | "cancelled";
+
+interface DockerLibrary {
+  path: string;
+  defaultName: string;
+}
+
+interface ServerConfig {
+  libraries: DockerLibrary[];
+  spotiflacPath: string;
+  isDocker: boolean;
+}
+
+interface ToolVersions {
+  ytdlp: string;
+  spotiflac: string;
+}
 
 interface QueueItem {
   id: string;
@@ -86,7 +110,7 @@ const DEFAULT_CONFIG: AppConfig = {
   ytMusic: { quality: "opus", embedMetadata: true },
 };
 
-// Helpers
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function isAbsolutePath(p: string): boolean {
   return p.startsWith("/") || /^[A-Za-z]:[/\\]/.test(p);
@@ -109,7 +133,7 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-// Queue
+// ── Queue card ────────────────────────────────────────────────────────────────
 
 interface QueueCardProps {
   item: QueueItem;
@@ -120,22 +144,20 @@ interface QueueCardProps {
 
 function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps) {
   const logsRef = useRef<HTMLTextAreaElement>(null);
-
   const isActive = item.status === "downloading";
   const elapsed = Math.floor(((item.finishedAt ?? Date.now()) - item.startedAt) / 1000);
-
   const rate = elapsed > 5 && item.current > 0 ? item.current / elapsed : 0;
-  const eta = rate > 0 && item.total > item.current
-    ? Math.floor((item.total - item.current) / rate)
-    : null;
-
+  const eta =
+    rate > 0 && item.total > item.current
+      ? Math.floor((item.total - item.current) / rate)
+      : null;
   const progress = item.total > 0 ? (item.current / item.total) * 100 : null;
-  const accentColor = item.provider === "Spotify" ? "border-l-[#1DB954]" : "border-l-[#FF0000]";
+  const accentColor =
+    item.provider === "Spotify" ? "border-l-[#1DB954]" : "border-l-[#FF0000]";
 
   useEffect(() => {
-    if (logsRef.current && item.logsOpen) {
+    if (logsRef.current && item.logsOpen)
       logsRef.current.scrollTop = logsRef.current.scrollHeight;
-    }
   }, [item.logs, item.logsOpen]);
 
   const StatusIcon = () => {
@@ -150,33 +172,30 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
       case "done":
         return (
           <span className="inline-flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">
-            <CheckCircle className="w-3 h-3" />
-            Done
+            <CheckCircle className="w-3 h-3" /> Done
           </span>
         );
       case "error":
         return (
           <span className="inline-flex items-center gap-1 text-xs text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full">
-            <XCircle className="w-3 h-3" />
-            Error
+            <XCircle className="w-3 h-3" /> Error
           </span>
         );
       case "cancelled":
         return (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            <X className="w-3 h-3" />
-            Cancelled
+            <X className="w-3 h-3" /> Cancelled
           </span>
         );
     }
   };
 
   return (
-    <div className={`rounded-lg border border-border border-l-4 ${accentColor} bg-card/60 overflow-hidden transition-all duration-200`}>
+    <div
+      className={`rounded-lg border border-border border-l-4 ${accentColor} bg-card/60 overflow-hidden transition-all duration-200`}
+    >
       <div className="p-4">
-        {/* Thumbnail, title, and status */}
         <div className="flex items-start gap-3">
-          {/* Thumbnail */}
           <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
             {item.thumb ? (
               <img src={item.thumb} className="w-full h-full object-cover" alt="" />
@@ -186,8 +205,6 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
               <SiYoutubemusic className="w-6 h-6 text-[#FF0000]" />
             )}
           </div>
-
-          {/* Title */}
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm truncate leading-tight">
               {item.title === "Loading..." ? (
@@ -196,14 +213,9 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">{item.provider}</p>
           </div>
-
-          {/* Status badge */}
-          <div className="flex-shrink-0">
-            <StatusIcon />
-          </div>
+          <div className="flex-shrink-0"><StatusIcon /></div>
         </div>
 
-        {/* Progress bar */}
         {progress !== null && (
           <div className="mt-3 space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -211,8 +223,7 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
                 {item.current} / {item.total} tracks
                 {item.errors > 0 && (
                   <span className="ml-2 text-yellow-500 inline-flex items-center gap-0.5">
-                    <AlertTriangle className="w-3 h-3" />
-                    {item.errors} failed
+                    <AlertTriangle className="w-3 h-3" /> {item.errors} failed
                   </span>
                 )}
               </span>
@@ -223,8 +234,7 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
                 className={`h-full rounded-full transition-all duration-500 ${
                   item.status === "done" ? "bg-green-500" :
                   item.status === "error" ? "bg-red-500" :
-                  item.status === "cancelled" ? "bg-muted-foreground" :
-                  "bg-primary"
+                  item.status === "cancelled" ? "bg-muted-foreground" : "bg-primary"
                 }`}
                 style={{ width: `${progress}%` }}
               />
@@ -238,24 +248,19 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
           </div>
         )}
 
-        {/* ETA */}
         <div className="mt-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
             <span>{formatTime(elapsed)}</span>
-            {isActive && eta !== null && (
-              <span className="ml-1">· ETA ~{formatTime(eta)}</span>
-            )}
+            {isActive && eta !== null && <span className="ml-1">· ETA ~{formatTime(eta)}</span>}
           </div>
-
           <div className="flex items-center gap-2">
             {isActive && (
               <button
                 onClick={() => onCancel(item)}
                 className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 border border-red-400/30 hover:border-red-400/60 px-2 py-1 rounded-md transition-colors"
               >
-                <X className="w-3 h-3" />
-                Cancel
+                <X className="w-3 h-3" /> Cancel
               </button>
             )}
             <button
@@ -269,7 +274,6 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
         </div>
       </div>
 
-      {/* Expandable logs */}
       {item.logsOpen && (
         <textarea
           ref={logsRef}
@@ -282,7 +286,7 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
   );
 }
 
-// Playlist name modal
+// ── Playlist name modal ───────────────────────────────────────────────────────
 
 interface PlaylistModalProps {
   url: string;
@@ -295,9 +299,7 @@ function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProp
   const [name, setName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && name.trim()) onConfirm(name.trim());
@@ -310,8 +312,7 @@ function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProp
         <div className="flex items-center gap-2 mb-1">
           {provider === "Spotify"
             ? <SiSpotify className="w-4 h-4 text-[#1DB954]" />
-            : <SiYoutubemusic className="w-4 h-4 text-[#FF0000]" />
-          }
+            : <SiYoutubemusic className="w-4 h-4 text-[#FF0000]" />}
           <h2 className="text-base font-semibold">Name this playlist folder</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-1">
@@ -329,14 +330,8 @@ function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProp
           className="mb-4"
         />
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => onConfirm(name.trim())}
-            disabled={!name.trim()}
-          >
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" onClick={() => onConfirm(name.trim())} disabled={!name.trim()}>
             Download
           </Button>
         </div>
@@ -345,7 +340,191 @@ function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProp
   );
 }
 
-// Main app
+// ── Library name editor row ───────────────────────────────────────────────────
+
+interface LibraryRowProps {
+  library: DockerLibrary;
+  displayName: string;
+  onRename: (path: string, name: string) => void;
+}
+
+function LibraryRow({ library, displayName, onRename }: LibraryRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(displayName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed) onRename(library.path, trimmed);
+    else setDraft(displayName);
+    setEditing(false);
+  };
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-background/50 px-3 py-2.5">
+      <code className="text-xs text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded shrink-0 max-w-[45%] truncate">
+        {library.path}
+      </code>
+      <span className="text-muted-foreground text-xs shrink-0">→</span>
+      <div className="flex-1 flex items-center gap-1.5 min-w-0">
+        {editing ? (
+          <>
+            <Input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") { setDraft(displayName); setEditing(false); }
+              }}
+              onBlur={commit}
+              className="h-7 text-sm py-0 px-2 bg-background"
+            />
+            <button onClick={commit} className="shrink-0 text-green-500 hover:text-green-400 transition-colors" title="Save">
+              <Check className="w-4 h-4" />
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-sm font-medium truncate">{displayName}</span>
+            <button
+              onClick={() => { setDraft(displayName); setEditing(true); }}
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              title="Rename"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Tools update card ─────────────────────────────────────────────────────────
+
+interface ToolsCardProps {
+  versions: ToolVersions | null;
+  onRefreshVersions: () => void;
+}
+
+function ToolsCard({ versions, onRefreshVersions }: ToolsCardProps) {
+  const [updating, setUpdating] = useState(false);
+  const [log, setLog] = useState("");
+  const [done, setDone] = useState(false);
+  const logRef = useRef<HTMLTextAreaElement>(null);
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [log]);
+
+  const startUpdate = () => {
+    if (updating) return;
+    setUpdating(true);
+    setDone(false);
+    setLog("");
+
+    const es = new EventSource(`${API}/api/tools/update`);
+    esRef.current = es;
+
+    es.onmessage = (e: MessageEvent<string>) => {
+      if (e.data === "[DONE]") {
+        es.close();
+        esRef.current = null;
+        setUpdating(false);
+        setDone(true);
+        onRefreshVersions();
+        return;
+      }
+      setLog((prev) => prev + (e.data === "" ? "\n" : "\n" + e.data));
+    };
+
+    es.onerror = () => {
+      es.close();
+      esRef.current = null;
+      setUpdating(false);
+    };
+  };
+
+  return (
+    <Card className="w-full bg-card/50 backdrop-blur-sm border-border/50">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-muted-foreground" />
+            <CardTitle className="text-lg">Bundled Tools</CardTitle>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={startUpdate}
+            disabled={updating}
+            className="gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${updating ? "animate-spin" : ""}`} />
+            {updating ? "Updating…" : "Update All"}
+          </Button>
+        </div>
+        <CardDescription>
+          yt-dlp and SpotiFLAC are bundled in this image. Updates run inside the container — no rebuild needed.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+        {/* Version table */}
+        <div className="rounded-lg border border-border divide-y divide-border">
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <SiYoutubemusic className="w-4 h-4 text-[#FF0000]" />
+              <span className="text-sm font-medium">yt-dlp</span>
+            </div>
+            <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+              {versions ? versions.ytdlp : "…"}
+            </code>
+          </div>
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <SiSpotify className="w-4 h-4 text-[#1DB954]" />
+              <span className="text-sm font-medium">SpotiFLAC</span>
+            </div>
+            <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+              {versions ? versions.spotiflac : "…"}
+            </code>
+          </div>
+        </div>
+
+        {/* Update log */}
+        {(updating || done || log) && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                Update log
+              </span>
+              {done && (
+                <span className="text-xs text-green-400 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Complete
+                </span>
+              )}
+            </div>
+            <textarea
+              ref={logRef}
+              readOnly
+              value={log}
+              placeholder="Update output will appear here…"
+              className="w-full h-40 p-3 bg-black/95 text-green-400 font-mono text-xs rounded-md border border-border/50 resize-none focus:outline-none"
+            />
+          </div>
+        )}
+
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Main app ──────────────────────────────────────────────────────────────────
 
 function App() {
   const [activeTab, setActiveTab] = useState<"download" | "config">("download");
@@ -357,10 +536,23 @@ function App() {
   const [tick, setTick] = useState(0);
   const [pendingDownload, setPendingDownload] = useState<{ url: string; provider: Provider } | null>(null);
 
+  // Server-driven state
+  const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
+  const [toolVersions, setToolVersions] = useState<ToolVersions | null>(null);
+
+  // Library display name overrides, persisted in localStorage
+  const [libraryNames, setLibraryNames] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("dromeport-library-names") ?? "{}") as Record<string, string>;
+    } catch { return {}; }
+  });
+
   const eventSourceRef = useRef<EventSource | null>(null);
   const activeJobIdRef = useRef<string | null>(null);
 
   const ActiveIcon = provider === "Spotify" ? SiSpotify : SiYoutubemusic;
+  const isDockerMode = serverConfig?.isDocker ?? false;
+  const dockerLibraries = serverConfig?.libraries ?? [];
 
   const [config, setConfig] = useState<AppConfig>(() => {
     try {
@@ -373,24 +565,60 @@ function App() {
         spotify: { ...DEFAULT_CONFIG.spotify, ...(parsed.spotify ?? {}) },
         ytMusic: { ...DEFAULT_CONFIG.ytMusic, ...(parsed.ytMusic ?? {}) },
       };
-    } catch {
-      return DEFAULT_CONFIG;
-    }
+    } catch { return DEFAULT_CONFIG; }
   });
 
-  // Live elapsed time
+  // ── Effects ───────────────────────────────────────────────────────────────
+
+  // Fetch server config on mount
+  useEffect(() => {
+    fetch(`${API}/api/config`)
+      .then((r) => r.json())
+      .then((data: ServerConfig) => {
+        setServerConfig(data);
+        // Auto-select first library if no path set yet
+        if (data.libraries.length > 0 && !config.libraryPath) {
+          setConfig((prev) => ({ ...prev, libraryPath: data.libraries[0].path }));
+        }
+      })
+      .catch(() => {
+        // Backend unreachable in dev without the server running — that's fine.
+        setServerConfig({ libraries: [], spotiflacPath: "", isDocker: false });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch tool versions whenever the config tab is opened (or on mount)
+  const fetchVersions = useCallback(() => {
+    fetch(`${API}/api/tools/versions`)
+      .then((r) => r.json())
+      .then((data: ToolVersions) => setToolVersions(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "config") fetchVersions();
+  }, [activeTab, fetchVersions]);
+
+  // Ticker for elapsed time
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
+  // Persist config
   useEffect(() => {
     localStorage.setItem("dromeport-config", JSON.stringify(config));
   }, [config]);
 
+  // Persist library name overrides
+  useEffect(() => {
+    localStorage.setItem("dromeport-library-names", JSON.stringify(libraryNames));
+  }, [libraryNames]);
+
   useEffect(() => () => { eventSourceRef.current?.close(); }, []);
 
-  // Config helpers
+  // ── Config helpers ────────────────────────────────────────────────────────
 
   const setLibraryPath = (val: string) => {
     if (isAbsolutePath(val) || val === "") setPathError("");
@@ -406,23 +634,26 @@ function App() {
   const setSpotify = (key: keyof AppConfig["spotify"], val: string | boolean | number) =>
     setConfig((prev) => ({ ...prev, spotify: { ...prev.spotify, [key]: val } }));
 
-  // Queue helpers
+  const renameLibrary = (path: string, name: string) =>
+    setLibraryNames((prev) => ({ ...prev, [path]: name }));
+
+  const getDisplayName = (lib: DockerLibrary) =>
+    libraryNames[lib.path] ?? lib.defaultName;
+
+  // ── Queue helpers ─────────────────────────────────────────────────────────
 
   const updateQueue = useCallback((id: string, updates: Partial<QueueItem>) => {
     setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, ...updates } : q)));
   }, []);
 
   const toggleLogs = useCallback((id: string) => {
-    setQueue((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, logsOpen: !q.logsOpen } : q))
-    );
+    setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, logsOpen: !q.logsOpen } : q)));
   }, []);
 
-  const clearCompleted = () => {
+  const clearCompleted = () =>
     setQueue((prev) => prev.filter((q) => q.status === "downloading"));
-  };
 
-  // Download
+  // ── Download ──────────────────────────────────────────────────────────────
 
   const startDownload = useCallback(
     (dlUrl: string, dlProvider: Provider, playlistFolder: string) => {
@@ -431,7 +662,6 @@ function App() {
       eventSourceRef.current?.close();
       setIsDownloading(true);
 
-      // Create queue item with temp ID until we get the real job_id from the backend
       const tempId = `temp-${Date.now()}`;
       const newItem: QueueItem = {
         id: tempId,
@@ -459,12 +689,9 @@ function App() {
         ...(playlistFolder ? { playlist_folder: playlistFolder } : {}),
       });
 
-      const es = new EventSource(
-        `http://localhost:8000/api/download/stream?${params.toString()}`
-      );
+      const es = new EventSource(`${API}/api/download/stream?${params.toString()}`);
       eventSourceRef.current = es;
 
-      // Named meta events
       es.addEventListener("meta", (e: MessageEvent<string>) => {
         try {
           const data = JSON.parse(e.data) as {
@@ -475,10 +702,8 @@ function App() {
             total?: number;
           };
           const currentId = activeJobIdRef.current!;
-
           switch (data.type) {
             case "job_id":
-              // Replace tempId with the real job_id
               if (data.value) {
                 setQueue((prev) =>
                   prev.map((q) => (q.id === currentId ? { ...q, id: data.value! } : q))
@@ -499,12 +724,9 @@ function App() {
               });
               break;
           }
-        } catch {
-          // ignore parse errors
-        }
+        } catch { /* ignore */ }
       });
 
-      // Regular log lines
       es.onmessage = (event: MessageEvent<string>) => {
         const currentId = activeJobIdRef.current!;
         if (event.data === "[DONE]") {
@@ -521,16 +743,11 @@ function App() {
           return;
         }
         const line = event.data === "" ? "\n" : "\n" + event.data;
-        // Count errors from log lines too
         const isError = event.data.startsWith("ERROR:") || event.data.includes("❌");
         setQueue((prev) =>
           prev.map((q) =>
             q.id === currentId
-              ? {
-                  ...q,
-                  logs: q.logs + line,
-                  errors: isError ? q.errors + 1 : q.errors,
-                }
+              ? { ...q, logs: q.logs + line, errors: isError ? q.errors + 1 : q.errors }
               : q
           )
         );
@@ -558,23 +775,12 @@ function App() {
 
   const handleDownload = () => {
     if (!url.trim()) return;
-    if (!config.libraryPath.trim()) {
-      setPathError("Path is required.");
-      setActiveTab("config");
-      return;
-    }
-    if (!isAbsolutePath(config.libraryPath)) {
-      setPathError("Must be an absolute path.");
-      setActiveTab("config");
-      return;
-    }
-
-    // Show playlist name modal if needed
+    if (!config.libraryPath.trim()) { setPathError("Path is required."); setActiveTab("config"); return; }
+    if (!isAbsolutePath(config.libraryPath)) { setPathError("Must be an absolute path."); setActiveTab("config"); return; }
     if (config.playlistMode === "folder" && isPlaylistUrl(url.trim())) {
       setPendingDownload({ url: url.trim(), provider });
       return;
     }
-
     startDownload(url.trim(), provider, "");
   };
 
@@ -585,32 +791,27 @@ function App() {
   };
 
   const handleCancel = async (item: QueueItem) => {
-    // Optimistic update
     updateQueue(item.id, { status: "cancelled", finishedAt: Date.now() });
     setIsDownloading(false);
     eventSourceRef.current?.close();
     eventSourceRef.current = null;
-
     try {
       await fetch(
-        `http://localhost:8000/api/download/${encodeURIComponent(item.id)}?library_path=${encodeURIComponent(item.libraryPath)}`,
+        `${API}/api/download/${encodeURIComponent(item.id)}?library_path=${encodeURIComponent(item.libraryPath)}`,
         { method: "DELETE" }
       );
-    } catch {
-      // backend might already be gone, ignore errors
-    }
+    } catch { /* ignore */ }
   };
 
   const hasCompleted = queue.some((q) => q.status !== "downloading");
 
-  // Rendering
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300 pb-16">
         <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {/* Playlist name modal */}
         {pendingDownload && (
           <PlaylistModal
             url={pendingDownload.url}
@@ -623,19 +824,13 @@ function App() {
         <main className="flex justify-center px-4">
           <div className="flex flex-col items-center mt-[8vh] sm:mt-[12vh] w-full max-w-3xl">
 
-            {/* Main download tab */}
+            {/* ── Download tab ── */}
             {activeTab === "download" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-
-                {/* Input URL bar */}
                 <div className="w-full flex flex-col sm:flex-row gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="flex items-center gap-2 shrink-0"
-                        disabled={isDownloading}
-                      >
+                      <Button variant="outline" className="flex items-center gap-2 shrink-0" disabled={isDownloading}>
                         <ActiveIcon className="w-4 h-4 shrink-0" />
                         <span className="whitespace-nowrap">{provider}</span>
                         <span className="text-[10px] opacity-50 ml-1">▼</span>
@@ -643,12 +838,10 @@ function App() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
                       <DropdownMenuItem onClick={() => setProvider("YouTube Music")} className="cursor-pointer">
-                        <SiYoutubemusic className="w-4 h-4 mr-2 shrink-0" />
-                        YouTube Music
+                        <SiYoutubemusic className="w-4 h-4 mr-2 shrink-0" /> YouTube Music
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setProvider("Spotify")} className="cursor-pointer">
-                        <SiSpotify className="w-4 h-4 mr-2 shrink-0" />
-                        Spotify
+                        <SiSpotify className="w-4 h-4 mr-2 shrink-0" /> Spotify
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -672,34 +865,22 @@ function App() {
                   </Button>
                 </div>
 
-                {/* Queue */}
                 {queue.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
                       <span className="text-sm font-semibold text-foreground">Queue</span>
                       {hasCompleted && (
-                        <button
-                          onClick={clearCompleted}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
+                        <button onClick={clearCompleted} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                           Clear completed
                         </button>
                       )}
                     </div>
-
                     {queue.map((item) => (
-                      <QueueCard
-                        key={item.id}
-                        item={item}
-                        tick={tick}
-                        onCancel={handleCancel}
-                        onToggleLogs={toggleLogs}
-                      />
+                      <QueueCard key={item.id} item={item} tick={tick} onCancel={handleCancel} onToggleLogs={toggleLogs} />
                     ))}
                   </div>
                 )}
 
-                {/* Empty state */}
                 {queue.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
@@ -711,7 +892,7 @@ function App() {
               </div>
             )}
 
-            {/* Configuration tab */}
+            {/* ── Config tab ── */}
             {activeTab === "config" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
@@ -723,28 +904,77 @@ function App() {
                   </CardHeader>
                   <CardContent className="space-y-6">
 
-                    <div className="space-y-2">
-                      <Label htmlFor="library-path" className="text-sm font-semibold">
-                        Library Path
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">(absolute path)</span>
+                    {/* Library selector */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold">
+                        Library
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {isDockerMode ? "select a destination" : "(absolute path)"}
+                        </span>
                       </Label>
-                      <Input
-                        id="library-path"
-                        value={config.libraryPath}
-                        onChange={(e) => setLibraryPath(e.target.value)}
-                        onBlur={() => {
-                          if (config.libraryPath && !isAbsolutePath(config.libraryPath))
-                            setPathError("Must be an absolute path (e.g. /home/user/Music).");
-                          else setPathError("");
-                        }}
-                        placeholder="/home/user/Music"
-                        className={`bg-background font-mono text-sm ${pathError ? "border-destructive" : ""}`}
-                      />
-                      {pathError && <p className="text-destructive text-xs">{pathError}</p>}
+
+                      {isDockerMode ? (
+                        <>
+                          <Select value={config.libraryPath} onValueChange={setLibraryPath}>
+                            <SelectTrigger className="bg-background w-full">
+                              <SelectValue placeholder="Select a library…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {dockerLibraries.map((lib) => (
+                                <SelectItem key={lib.path} value={lib.path}>
+                                  {getDisplayName(lib)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            Can't find your library? Make sure you've added the correct{" "}
+                            <code className="font-mono bg-muted px-1 rounded">DROMEPORT_LIBRARY_*</code>{" "}
+                            environment variables in your{" "}
+                            <code className="font-mono bg-muted px-1 rounded">docker-compose.yml</code>.
+                          </p>
+
+                          <div className="space-y-2 pt-1">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                              Display Names
+                            </p>
+                            {dockerLibraries.map((lib) => (
+                              <LibraryRow
+                                key={lib.path}
+                                library={lib}
+                                displayName={getDisplayName(lib)}
+                                onRename={renameLibrary}
+                              />
+                            ))}
+                            <p className="text-xs text-muted-foreground">
+                              Click <Pencil className="inline w-3 h-3 mx-0.5" /> to rename. Container paths are read-only.
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Input
+                            id="library-path"
+                            value={config.libraryPath}
+                            onChange={(e) => setLibraryPath(e.target.value)}
+                            onBlur={() => {
+                              if (config.libraryPath && !isAbsolutePath(config.libraryPath))
+                                setPathError("Must be an absolute path (e.g. /home/user/Music).");
+                              else setPathError("");
+                            }}
+                            placeholder="/home/user/Music"
+                            className={`bg-background font-mono text-sm ${pathError ? "border-destructive" : ""}`}
+                          />
+                          {pathError && <p className="text-destructive text-xs">{pathError}</p>}
+                        </>
+                      )}
                     </div>
 
                     <Separator className="bg-border/50" />
 
+                    {/* Playlist mode */}
                     <div className="space-y-3">
                       <div>
                         <Label className="text-sm font-semibold">Playlist Download Mode</Label>
@@ -784,7 +1014,7 @@ function App() {
                   </CardContent>
                 </Card>
 
-                {/* Youtube music section */}
+                {/* YouTube Music */}
                 <Card className="w-full bg-card/50 backdrop-blur-sm border-border/50">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -792,14 +1022,9 @@ function App() {
                         <SiYoutubemusic className="w-5 h-5 text-[#FF0000]" />
                         <CardTitle className="text-lg">YouTube Music</CardTitle>
                       </div>
-                      <a
-                        href="https://github.com/yt-dlp/yt-dlp"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <SiGithub className="w-3.5 h-3.5" />
-                        yt-dlp
+                      <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        <SiGithub className="w-3.5 h-3.5" /> yt-dlp
                       </a>
                     </div>
                     <CardDescription>Downloads via yt-dlp. Supports tracks and playlists.</CardDescription>
@@ -829,7 +1054,7 @@ function App() {
                   </CardContent>
                 </Card>
 
-                {/* Spotify section */}
+                {/* Spotify */}
                 <Card className="w-full bg-card/50 backdrop-blur-sm border-border/50">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -837,14 +1062,9 @@ function App() {
                         <SiSpotify className="w-5 h-5 text-[#1DB954]" />
                         <CardTitle className="text-lg">Spotify</CardTitle>
                       </div>
-                      <a
-                        href="https://github.com/jelte1/SpotiFLAC-Command-Line-Interface"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <SiGithub className="w-3.5 h-3.5" />
-                        SpotiFLAC
+                      <a href="https://github.com/jelte1/SpotiFLAC-Command-Line-Interface" target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        <SiGithub className="w-3.5 h-3.5" /> SpotiFLAC
                       </a>
                     </div>
                     <CardDescription>
@@ -853,33 +1073,41 @@ function App() {
                   </CardHeader>
                   <CardContent className="space-y-4">
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-semibold">
-                        SpotiFLAC Path
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">
-                          (path to binary or launcher.py)
-                        </span>
-                      </Label>
-                      <Input
-                        value={config.spotify.spotiflacPath}
-                        onChange={(e) => setSpotify("spotiflacPath", e.target.value)}
-                        placeholder="/opt/SpotiFLAC/SpotiFLAC-Linux-x64  or  /opt/SpotiFLAC/launcher.py"
-                        className="bg-background font-mono text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        For a binary, make sure it's executable:{" "}
-                        <code className="font-mono bg-muted px-1 rounded">chmod +x /path/to/SpotiFLAC</code>
-                      </p>
-                    </div>
+                    {/* SpotiFLAC path — hidden in Docker (pre-installed) */}
+                    {isDockerMode ? (
+                      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium">SpotiFLAC is pre-installed</p>
+                          <code className="text-xs text-muted-foreground font-mono">
+                            {serverConfig?.spotiflacPath ?? "/opt/spotiflac/launcher.py"}
+                          </code>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">
+                          SpotiFLAC Path
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            (path to binary or launcher.py)
+                          </span>
+                        </Label>
+                        <Input
+                          value={config.spotify.spotiflacPath}
+                          onChange={(e) => setSpotify("spotiflacPath", e.target.value)}
+                          placeholder="/opt/SpotiFLAC/SpotiFLAC-Linux-x64  or  /opt/SpotiFLAC/launcher.py"
+                          className="bg-background font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          For a binary, make sure it's executable:{" "}
+                          <code className="font-mono bg-muted px-1 rounded">chmod +x /path/to/SpotiFLAC</code>
+                        </p>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Music Service
-                      </Label>
-                      <Select
-                        value={config.spotify.spotiflacService}
-                        onValueChange={(v) => setSpotify("spotiflacService", v)}
-                      >
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Music Service</Label>
+                      <Select value={config.spotify.spotiflacService} onValueChange={(v) => setSpotify("spotiflacService", v)}>
                         <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="tidal">Tidal</SelectItem>
@@ -893,13 +1121,8 @@ function App() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Output Format
-                      </Label>
-                      <Select
-                        value={config.spotify.spotiflacOutputFormat}
-                        onValueChange={(v) => setSpotify("spotiflacOutputFormat", v)}
-                      >
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Output Format</Label>
+                      <Select value={config.spotify.spotiflacOutputFormat} onValueChange={(v) => setSpotify("spotiflacOutputFormat", v)}>
                         <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="flac">FLAC — lossless (default, no transcoding)</SelectItem>
@@ -909,15 +1132,13 @@ function App() {
                       </Select>
                       {config.spotify.spotiflacOutputFormat !== "flac" && (
                         <p className="text-xs text-amber-500/90 bg-amber-500/10 border border-amber-500/20 rounded-md px-3 py-2">
-                          ⚠️ Transcoding with FFmpeg runs after the download finishes and may take significant additional time for large playlists. FFmpeg must be installed and available in your PATH. Metadata is preserved during transcoding.
+                          ⚠️ Transcoding with FFmpeg runs after the download finishes and may take significant additional time for large playlists. Metadata is preserved.
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Filename Format
-                      </Label>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Filename Format</Label>
                       <Input
                         value={config.spotify.spotiflacFilenameFormat}
                         onChange={(e) => setSpotify("spotiflacFilenameFormat", e.target.value)}
@@ -933,9 +1154,7 @@ function App() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Subfolder Organisation
-                      </Label>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Subfolder Organisation</Label>
                       <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
                         <div className="space-y-0.5 pr-4">
                           <Label className="text-sm">Artist Subfolders</Label>
@@ -959,16 +1178,12 @@ function App() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Retry Loop (minutes)
-                      </Label>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Retry Loop (minutes)</Label>
                       <Input
                         type="number"
                         min={0}
                         value={config.spotify.spotiflacLoop}
-                        onChange={(e) =>
-                          setSpotify("spotiflacLoop", parseInt(e.target.value) || 0)
-                        }
+                        onChange={(e) => setSpotify("spotiflacLoop", parseInt(e.target.value) || 0)}
                         className="bg-background w-28"
                       />
                       <p className="text-xs text-muted-foreground">
@@ -978,6 +1193,11 @@ function App() {
 
                   </CardContent>
                 </Card>
+
+                {/* Bundled tools card — only shown in Docker mode */}
+                {isDockerMode && (
+                  <ToolsCard versions={toolVersions} onRefreshVersions={fetchVersions} />
+                )}
 
               </div>
             )}
