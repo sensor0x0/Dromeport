@@ -52,7 +52,9 @@ COPY backend/ ./
 
 COPY --from=frontend-build /app/dromeport/dist ./static
 
-RUN useradd -m -u 1000 dromeport
+RUN useradd -m -u 1000 dromeport \
+    && chown -R dromeport:dromeport /opt/spotiflac \
+    && chown -R dromeport:dromeport /app
 USER dromeport
 
 EXPOSE 8080
