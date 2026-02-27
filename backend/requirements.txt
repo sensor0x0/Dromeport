@@ -1,0 +1,5 @@
+# backend/requirements.txt
+
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+mutagen>=1.47.0

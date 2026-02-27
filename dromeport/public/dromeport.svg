@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 135.46666 135.46667"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <linearGradient
+       id="swatch21">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop21" />
+    </linearGradient>
+  </defs>
+  <g
+     id="layer1">
+    <path
+       style="mix-blend-mode:normal;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:5.04661;stroke-linecap:square;stroke-linejoin:miter;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke fill markers"
+       id="path1"
+       d="M 47.430161,78.433964 -8.1006733,78.433963 19.664744,30.342852 47.430162,-17.74826 75.195577,30.342851 102.96099,78.433965 Z"
+       transform="matrix(1.1307483,0,0,-1.305676,14.101749,105.70396)" />
+    <text
+       xml:space="preserve"
+       style="font-size:66.6385px;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:138.83;stroke-linecap:square;stroke-linejoin:miter;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke fill markers"
+       x="27.297157"
+       y="51.47718"
+       id="text65"
+       transform="scale(0.97555856,1.0250538)"><tspan
+         id="tspan65"
+         style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'JetBrains Mono';-inkscape-font-specification:'JetBrains Mono Bold Italic';fill:#000000;fill-opacity:1;stroke:none;stroke-width:138.83"
+         x="27.297157"
+         y="51.47718">D</tspan></text>
+    <g
+       id="rect65"
+       style="opacity:1"
+       transform="rotate(-75)">
+      <path
+         style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;stroke-linecap:square;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+         d="M -60.402344,77.638672 V 92.910156 H 18.724609 V 77.638672 Z"
+         id="path6" />
+      <path
+         style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;stroke-linecap:square;paint-order:stroke fill markers;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+         d="m -53.109295,84.930519 h 64.54184 v 0.686615 h -64.54184 z"
+         id="path7" />
+      <g
+         id="g2">
+        <g
+           id="path2"
+           style="opacity:1">
+          <path
+             style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill-rule:evenodd;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+             d="m -74.986196,84.930519 c 10.938451,-3.64615 25.523051,-10.93845 32.815351,-18.23075 0,0 0,14.5846 -7.2923,18.23075 7.2923,3.64615 7.2923,18.230751 7.2923,18.230751 -7.2923,-7.292301 -21.8769,-14.584601 -32.815351,-18.230751 z"
+             id="path3" />
+          <path
+             style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill-rule:evenodd;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+             d="m -39.740234,60.832031 -4.150391,4.148438 C -50.609988,71.699832 -65.122926,79.08134 -75.753906,82.625 l -6.919922,2.304687 6.919922,2.306641 c 10.63098,3.54366 25.143918,10.925168 31.863281,17.644532 l 4.150391,4.14844 v -5.86719 c 0,0 0.009,-3.875699 -0.96875,-8.275391 -0.745698,-3.355642 -2.04229,-7.231324 -4.736328,-9.957032 2.693488,-2.725668 3.990704,-6.599769 4.736328,-9.955078 0.977709,-4.399692 0.96875,-8.27539 0.96875,-8.27539 z m -5.478516,11.482422 c -0.09555,0.57426 -0.101618,0.999271 -0.236328,1.605469 -0.845366,3.804145 -2.609097,7.592634 -5.095703,8.835937 l -4.347656,2.173828 4.347656,2.175782 c 2.486606,1.243303 4.250337,5.031792 5.095703,8.835937 0.134785,0.606535 0.142696,1.030915 0.238281,1.605469 -6.53267,-4.999776 -14.976173,-9.419349 -22.982422,-12.617188 8.005563,-3.19762 16.448113,-7.615975 22.980469,-12.615234 z"
+             id="path5" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
