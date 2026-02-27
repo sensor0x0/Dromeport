@@ -1473,6 +1473,9 @@ function App() {
             {/* Download tab */}
             {activeTab === "download" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* Page title */}
+                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">Download.</p>
+
                 <div className="w-full flex flex-col sm:flex-row gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1511,6 +1514,15 @@ function App() {
                   </Button>
                 </div>
 
+                {/* Tooltip showing where files will land */}
+                <p className="text-xs text-muted-foreground/60 flex items-center gap-1 -mt-4">
+                  <Info className="w-3 h-3 shrink-0" />
+                  Files will be downloaded to:{" "}
+                  <span className="font-mono">
+                    {config.libraryPath || "/downloads"}
+                  </span>
+                </p>
+
                 {queue.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
@@ -1541,6 +1553,9 @@ function App() {
             {/* Synchronisation tab */}
             {activeTab === "sync" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* Page title */}
+                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">Sync.</p>
+
                 <div className="flex items-center justify-between px-1">
                   <div>
                     <h2 className="text-lg font-semibold">Synchronisation <span className="text-xs font-normal text-muted-foreground">(beta)</span></h2>
@@ -1583,6 +1598,8 @@ function App() {
             {/* Configuration tab */}
             {activeTab === "config" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* Page title */}
+                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">Config.</p>
 
                 {/* Global config */}
                 <Card className="w-full bg-card/50 backdrop-blur-sm border-border/50">

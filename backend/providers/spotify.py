@@ -149,6 +149,11 @@ async def _spotiflac_stream(
 
             yield f"data: {line}\n\n"
 
+            # When SpotiFLAC exhausts all configured services for a track, nudge the
+            # user to try YouTube Music as an alternative since it uses yt-dlp instead.
+            if re.search(r"\[x\] failed all services", lower):
+                yield "data: 💡 Tip: This track couldn't be found on any SpotiFLAC service. Try downloading it with YouTube Music instead.\n\n"
+
         await process.wait()
 
     except FileNotFoundError:
