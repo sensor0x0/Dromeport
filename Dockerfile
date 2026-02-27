@@ -1,4 +1,4 @@
-# ── Stage 1: Build the Vite frontend ─────────────────────────────────────────
+# Build Vite frontend
 FROM node:20-alpine AS frontend-build
 
 WORKDIR /app/dromeport
@@ -10,7 +10,7 @@ COPY dromeport/ ./
 RUN npm run build
 
 
-# ── Stage 2: Python backend + bundled tools ───────────────────────────────────
+# Python backend and bundled tools
 FROM python:3.12-slim
 
 # git   → initial SpotiFLAC clone + in-container updates
@@ -23,14 +23,14 @@ RUN apt-get update \
         coreutils \
     && rm -rf /var/lib/apt/lists/*
 
-# ── yt-dlp ────────────────────────────────────────────────────────────────────
+# yt-dlp
 # pip-installed so "pip install -U yt-dlp" updates it inside the running
 # container with no image rebuild needed.
 RUN pip install --no-cache-dir yt-dlp
 
-# ── SpotiFLAC-CLI ─────────────────────────────────────────────────────────────
+# SpotiFLAC-CLI
 # Clone the repo, then install its dependencies as declared in pyproject.toml.
-# No requirements.txt — deps are: requests, mutagen, pyotp.
+# No requirements.txt, deps are: requests, mutagen, pyotp.
 # "git pull" inside the running container is enough to update the tool itself.
 RUN git clone --depth 1 \
         https://github.com/jelte1/SpotiFLAC-Command-Line-Interface \
@@ -42,7 +42,7 @@ RUN git clone --depth 1 \
 
 ENV SPOTIFLAC_PATH=/opt/spotiflac/launcher.py
 
-# ── Backend ───────────────────────────────────────────────────────────────────
+# Backend
 WORKDIR /app
 
 COPY backend/requirements.txt ./

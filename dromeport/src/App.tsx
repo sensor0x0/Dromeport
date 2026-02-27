@@ -925,10 +925,12 @@ function App() {
 
                           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                            Can't find your library? Make sure you've added the correct{" "}
-                            <code className="font-mono bg-muted px-1 rounded">DROMEPORT_LIBRARY_*</code>{" "}
-                            environment variables in your{" "}
-                            <code className="font-mono bg-muted px-1 rounded">docker-compose.yml</code>.
+                            <span>
+                              Can't find your library? Make sure you've added the correct{" "}
+                              <code className="font-mono bg-muted px-1 rounded">DROMEPORT_LIBRARY_*</code>{" "}
+                              environment variables in your{" "}
+                              <code className="font-mono bg-muted px-1 rounded">docker-compose.yml</code>.
+                            </span>
                           </p>
 
                           <div className="space-y-2 pt-1">
@@ -1068,7 +1070,7 @@ function App() {
                   </CardHeader>
                   <CardContent className="space-y-4">
 
-                    {/* SpotiFLAC path — hidden in Docker (pre-installed) */}
+                    {/* SpotiFLAC path - hidden in Docker (pre-installed) */}
                     {isDockerMode ? (
                       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
                         <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
@@ -1120,9 +1122,9 @@ function App() {
                       <Select value={config.spotify.spotiflacOutputFormat} onValueChange={(v) => setSpotify("spotiflacOutputFormat", v)}>
                         <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="flac">FLAC — lossless (default, no transcoding)</SelectItem>
-                          <SelectItem value="opus">Opus — lossy via FFmpeg (~320 kbps)</SelectItem>
-                          <SelectItem value="mp3">MP3 — lossy via FFmpeg (VBR best)</SelectItem>
+                          <SelectItem value="flac">FLAC - lossless (default, no transcoding)</SelectItem>
+                          <SelectItem value="opus">Opus - lossy via FFmpeg (~320 kbps)</SelectItem>
+                          <SelectItem value="mp3">MP3 - lossy via FFmpeg (VBR best)</SelectItem>
                         </SelectContent>
                       </Select>
                       {config.spotify.spotiflacOutputFormat !== "flac" && (
