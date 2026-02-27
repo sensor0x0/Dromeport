@@ -201,7 +201,8 @@ async def _spotiflac_stream(
                 transcode_errors = 0
 
                 for flac_path in flac_files:
-                    out_path = flac_path.with_suffix(f".{output_format}")
+                    suffix = ".ogg" if output_format == "opus" else f".{output_format}"
+                    out_path = flac_path.with_suffix(suffix)
                     yield f"data:   ↳ {flac_path.name} → {out_path.name}\n\n"
 
                     if output_format == "mp3":
@@ -248,7 +249,7 @@ async def _spotiflac_stream(
     else:
         yield (
             f"data: ⚠️  SpotiFLAC exited with code {process.returncode}. "
-            f"Some tracks may have failed — check the log above.\n\n"
+            f"Some tracks may have failed - check the log above.\n\n"
         )
 
     yield "data: [DONE]\n\n"

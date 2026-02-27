@@ -34,6 +34,7 @@ services:
 
   dromeport:
     image: ghcr.io/sensor0x0/dromeport:latest
+    user: 1000:1000
     ports:
       - "8080:8080"
     restart: unless-stopped

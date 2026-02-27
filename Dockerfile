@@ -13,9 +13,9 @@ RUN npm run build
 # Python backend and bundled tools
 FROM python:3.12-slim
 
-# git   → initial SpotiFLAC clone + in-container updates
-# ffmpeg → transcoding (Opus / MP3)
-# stdbuf → line-buffered output
+# git - initial SpotiFLAC clone + in-container updates
+# ffmpeg - transcoding (Opus / MP3)
+# stdbuf - line-buffered output
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ffmpeg \
@@ -51,6 +51,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./
 
 COPY --from=frontend-build /app/dromeport/dist ./static
+
+RUN useradd -m -u 1000 dromeport
+USER dromeport
 
 EXPOSE 8080
 
