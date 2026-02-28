@@ -15,7 +15,7 @@ from typing import AsyncGenerator, Any
 from SpotiFLAC import SpotiFLAC
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# Helpers
 
 def _is_playlist_url(url: str) -> bool:
     u = url.lower()
@@ -26,7 +26,7 @@ def _meta(payload: dict) -> str:
     return f"event: meta\ndata: {json.dumps(payload)}\n\n"
 
 
-# ── stdout capture ────────────────────────────────────────────────────────────
+# Stdout capture
 
 class _LineQueue(io.TextIOBase):
     """Replacement stdout that feeds each complete line into a queue."""
@@ -48,7 +48,7 @@ class _LineQueue(io.TextIOBase):
             self._buf = ""
 
 
-# ── Cancellation proxy ────────────────────────────────────────────────────────
+# Cancellation
 
 class _ThreadJobProxy:
     """
@@ -70,7 +70,7 @@ class _ThreadJobProxy:
         return self.returncode
 
 
-# ── Public entry point ────────────────────────────────────────────────────────
+# Public entry point
 
 async def download_spotify_stream(
     url: str,
@@ -82,7 +82,7 @@ async def download_spotify_stream(
         yield chunk
 
 
-# ── Core stream ───────────────────────────────────────────────────────────────
+# Core stream
 
 async def _spotiflac_stream(
     url: str,
@@ -120,7 +120,7 @@ async def _spotiflac_stream(
 
     services = service.split()
 
-    # ── Banner ──
+    # Banner
     yield f"data: Starting Spotify download via SpotiFLAC (service: {service})...\n\n"
     if is_playlist:
         dest_note = (
@@ -135,7 +135,7 @@ async def _spotiflac_stream(
     else:
         yield _meta({"type": "title", "value": "Spotify download"})
 
-    # ── Thread setup ──
+    # Thread setup
     output_q: "queue.Queue[str | None]" = queue.Queue(maxsize=2000)
     cancel_event = threading.Event()
     proxy = _ThreadJobProxy(cancel_event)
@@ -171,7 +171,7 @@ async def _spotiflac_stream(
     event_loop = asyncio.get_event_loop()
     thread_future = event_loop.run_in_executor(None, _run)
 
-    # ── Consume output ──
+    # Consume output
     downloaded = 0
     errors = 0
     skipped = 0
@@ -210,7 +210,7 @@ async def _spotiflac_stream(
             if line.startswith("[DEBUG]"):
                 continue
 
-            # ── Parse known output patterns ───────────────────────────────
+            # Parse known output patterns
 
             if m := re.match(r"^\[(\d+)/(\d+)\]\s+Starting download:\s*(.+)", line):
                 current, total = int(m.group(1)), int(m.group(2))
@@ -261,9 +261,6 @@ async def _spotiflac_stream(
 
     yield "data: \n\n"
 
-    # A download where every track failed is not a success, even if SpotiFLAC
-    # itself exited cleanly.  Only applies when we actually tried something
-    # (total_count > 0) — pure metadata errors are caught by had_fatal_error.
     complete_failure = errors > 0 and downloaded == 0 and total_count > 0
     success = not had_fatal_error and not was_cancelled and not complete_failure
 
@@ -302,7 +299,7 @@ async def _spotiflac_stream(
     yield "data: [DONE]\n\n"
 
 
-# ── Post-download helpers ─────────────────────────────────────────────────────
+# Post-download helpers
 
 async def _flatten_spotiflac_subfolders(output_dir: str) -> AsyncGenerator[str, None]:
     """Move files from SpotiFLAC's auto-created subfolder up into output_dir."""

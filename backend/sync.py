@@ -168,8 +168,7 @@ class SyncManager:
         if playlist_folder:
             config["playlistMode"] = "folder"
             config["_playlist_folder"] = playlist_folder
-        # Never use artist/album subfolders for sync — the playlist folder is
-        # the intended organisation unit.
+        # Never use artist/album subfolders for sync
         config.setdefault("spotify", {})["spotiflacArtistSubfolders"] = False
         config.setdefault("spotify", {})["spotiflacAlbumSubfolders"] = False
         return config
@@ -182,16 +181,6 @@ class SyncManager:
         log_lines: list[str],
         status_holder: list[str],
     ) -> None:
-        """
-        Parse one SSE chunk and update log_lines / status_holder.
-
-        Named status event (emitted by both providers at the end):
-            event: status
-            data: {"success": true, ...}
-
-        Plain data event:
-            data: some text
-        """
         if chunk.startswith("event: status\n"):
             for raw_line in chunk.split("\n"):
                 if raw_line.startswith("data: "):
@@ -201,7 +190,7 @@ class SyncManager:
                             status_holder[0] = "error"
                     except (json.JSONDecodeError, ValueError):
                         status_holder[0] = "error"
-            return  # status events don't go into the human-readable log
+            return
 
         if chunk.startswith("data: "):
             line = chunk[6:].rstrip("\n")

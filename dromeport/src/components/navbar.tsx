@@ -11,7 +11,6 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container max-w-screen-2xl mx-auto px-4">
-        {/* Main row - logo, desktop nav, and action buttons */}
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-baseline gap-1.5">
@@ -81,7 +80,6 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile nav - shown below the main row on small screens */}
         <nav className="flex sm:hidden items-center gap-5 text-sm font-medium pb-2.5 pt-0.5 border-t border-border/30">
           <button
             onClick={() => setActiveTab("download")}
