@@ -97,10 +97,13 @@ interface AppConfig {
     spotiflacFilenameFormat: string;
     spotiflacOutputFormat: string;
     embedMetadata: boolean;
+    enrichMetadata: boolean;
+    lastfmApiKey: string;
   };
   ytMusic: {
     quality: string;
     embedMetadata: boolean;
+    enrichMetadata: boolean;
   };
 }
 
@@ -135,8 +138,10 @@ const DEFAULT_CONFIG: AppConfig = {
     spotiflacFilenameFormat: "{track_number} {title} - {artist}",
     spotiflacOutputFormat: "flac",
     embedMetadata: true,
+    enrichMetadata: true,
+    lastfmApiKey: "",
   },
-  ytMusic: { quality: "opus", embedMetadata: true },
+  ytMusic: { quality: "opus", embedMetadata: true, enrichMetadata: true },
 };
 
 // Helpers
@@ -162,9 +167,9 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-function formatRelativeTime(isoString: string | null): string {
+function formatRelativeTime(isoString: string | null, now: number): string {
   if (!isoString) return "Never";
-  const diff = Date.now() - new Date(isoString + "Z").getTime();
+  const diff = now - new Date(isoString + "Z").getTime();
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return "Just now";
   const minutes = Math.floor(seconds / 60);
@@ -175,9 +180,9 @@ function formatRelativeTime(isoString: string | null): string {
   return `${days}d ago`;
 }
 
-function formatTimeUntil(isoString: string | null): string {
+function formatTimeUntil(isoString: string | null, now: number): string {
   if (!isoString) return "Not scheduled";
-  const diff = new Date(isoString).getTime() - Date.now();
+  const diff = new Date(isoString).getTime() - now;
   if (diff <= 0) return "Soon";
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return "Less than a minute";
@@ -215,21 +220,21 @@ function describeSchedule(p: SyncPlaylist): string {
 
 interface QueueCardProps {
   item: QueueItem;
-  tick: number;
+  now: number;
   onCancel: (item: QueueItem) => void;
   onToggleLogs: (id: string) => void;
 }
 
 function QueueCard({
   item,
-  tick: _tick,
+  now,
   onCancel,
   onToggleLogs,
 }: QueueCardProps) {
   const logsRef = useRef<HTMLTextAreaElement>(null);
   const isActive = item.status === "downloading";
   const elapsed = Math.floor(
-    ((item.finishedAt ?? Date.now()) - item.startedAt) / 1000,
+    ((item.finishedAt ?? now) - item.startedAt) / 1000,
   );
   const rate = elapsed > 5 && item.current > 0 ? item.current / elapsed : 0;
   const eta =
@@ -245,7 +250,7 @@ function QueueCard({
       logsRef.current.scrollTop = logsRef.current.scrollHeight;
   }, [item.logs, item.logsOpen]);
 
-  const StatusIcon = () => {
+  const renderStatusIcon = () => {
     switch (item.status) {
       case "downloading":
         return (
@@ -307,7 +312,7 @@ function QueueCard({
             </p>
           </div>
           <div className="flex-shrink-0">
-            <StatusIcon />
+            {renderStatusIcon()}
           </div>
         </div>
 
@@ -1085,12 +1090,14 @@ function EditScheduleModal({
 
 interface SyncPlaylistCardProps {
   playlist: SyncPlaylist;
+  now: number;
   onEdit: (playlist: SyncPlaylist) => void;
   onDelete: (id: string) => void;
 }
 
 function SyncPlaylistCard({
   playlist,
+  now,
   onEdit,
   onDelete,
 }: SyncPlaylistCardProps) {
@@ -1206,12 +1213,12 @@ function SyncPlaylistCard({
             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                Last synced: {formatRelativeTime(lastSyncedAt)}
+                Last synced: {formatRelativeTime(lastSyncedAt, now)}
               </span>
               {playlist.enabled && playlist.next_run_at && (
                 <span className="flex items-center gap-1">
                   <RotateCw className="w-3 h-3" />
-                  Next: {formatTimeUntil(playlist.next_run_at)}
+                  Next: {formatTimeUntil(playlist.next_run_at, now)}
                 </span>
               )}
             </div>
@@ -1284,7 +1291,7 @@ function App() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [pathError, setPathError] = useState("");
   const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [tick, setTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const [pendingDownload, setPendingDownload] = useState<{
     url: string;
     provider: Provider;
@@ -1344,12 +1351,12 @@ function App() {
       .then((data: ServerConfig) => {
         setServerConfig(data);
         // Auto-select first library if no path set yet
-        if (data.libraries.length > 0 && !config.libraryPath) {
-          setConfig((prev) => ({
-            ...prev,
-            libraryPath: data.libraries[0].path,
-          }));
-        }
+        setConfig((prev) => {
+          if (data.libraries.length > 0 && !prev.libraryPath) {
+            return { ...prev, libraryPath: data.libraries[0].path };
+          }
+          return prev;
+        });
       })
       .catch(() => {
         setServerConfig({ libraries: [] });
@@ -1382,7 +1389,7 @@ function App() {
 
   // Ticker for elapsed time
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -1818,7 +1825,7 @@ function App() {
                       <QueueCard
                         key={item.id}
                         item={item}
-                        tick={tick}
+                        now={now}
                         onCancel={handleCancel}
                         onToggleLogs={toggleLogs}
                       />
@@ -1874,6 +1881,7 @@ function App() {
                       <SyncPlaylistCard
                         key={p.id}
                         playlist={p}
+                        now={now}
                         onEdit={setEditingSync}
                         onDelete={handleDeleteSync}
                       />
@@ -2107,6 +2115,18 @@ function App() {
                         onCheckedChange={(v) => setYtMusic("embedMetadata", v)}
                       />
                     </div>
+                    <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
+                      <div className="space-y-0.5 pr-4">
+                        <Label className="text-sm">Enrich Metadata</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Improve cover art and add genre via YouTube Music API
+                        </p>
+                      </div>
+                      <Switch
+                        checked={config.ytMusic.enrichMetadata}
+                        onCheckedChange={(v) => setYtMusic("enrichMetadata", v)}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -2119,7 +2139,7 @@ function App() {
                         <CardTitle className="text-lg">Spotify</CardTitle>
                       </div>
                       <a
-                        href="https://pypi.org/project/SpotiFLAC/"
+                        href="https://github.com/jelte1/SpotiFLAC-Command-Line-Interface"
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -2279,6 +2299,70 @@ function App() {
                         0 = no retry. Set e.g. 120 to keep retrying for 2 hours
                         on failure.
                       </p>
+                    </div>
+
+                    <Separator className="bg-border/50" />
+
+                    {/* Metadata enrichment */}
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-sm font-semibold">
+                          Metadata Enrichment
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          After each download, enrich files with BPM, key,
+                          genre, label, and high-res cover art from Spotify,
+                          MusicBrainz, and optionally Last.fm.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
+                        <div className="space-y-0.5 pr-4">
+                          <Label className="text-sm">Enable Enrichment</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Adds BPM, key, genre, label · no API key needed
+                          </p>
+                        </div>
+                        <Switch
+                          checked={config.spotify.enrichMetadata}
+                          onCheckedChange={(v) =>
+                            setSpotify("enrichMetadata", v)
+                          }
+                        />
+                      </div>
+
+                      {config.spotify.enrichMetadata && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                            Last.fm API Key
+                            <span className="ml-2 normal-case font-normal">
+                              (optional)
+                            </span>
+                          </Label>
+                          <Input
+                            type="password"
+                            value={config.spotify.lastfmApiKey}
+                            onChange={(e) =>
+                              setSpotify("lastfmApiKey", e.target.value)
+                            }
+                            placeholder="Paste your Last.fm API key..."
+                            className="bg-background font-mono text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Adds crowdsourced track-level genre tags. Get a free
+                            key at{" "}
+                            <a
+                              href="https://www.last.fm/api/account/create"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="underline hover:text-foreground transition-colors"
+                            >
+                              last.fm/api
+                            </a>
+                            .
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

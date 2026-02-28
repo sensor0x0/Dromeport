@@ -2,13 +2,14 @@
 
 A self-hosted music downloader built with [Navidrome](https://www.navidrome.org/) in mind. It wraps yt-dlp and SpotiFLAC-CLI into a clean web UI.
 
-> Dromeport is in beta. If you run into any bugs / issues, please report them at [github.com/sensor0x0/Dromeport/issues](https://github.com/sensor0x0/dromeport/issues).
+> Dromeport is in beta, it is not yet polished. If you run into any bugs / issues, please report them at [github.com/sensor0x0/Dromeport/issues](https://github.com/sensor0x0/dromeport/issues).
 
 ---
 
 ## Features
 
 - Download tracks / playlists from Spotify (lossless quality FLAC) and YouTube Music (high quality lossy)
+- Embed tracks with rich metadata: genre, label, high-res cover art, BPM, key
 - Auto-sync playlists using a task scheduler
 - Designed to write directly into your Navidrome music library
 - Live download progress, queue, and logs
@@ -20,6 +21,18 @@ A self-hosted music downloader built with [Navidrome](https://www.navidrome.org/
 - [ ] Fallback to using yt-dlp if SpotiFLAC fails, and vice versa.
 - [ ] Trigger a Navidrome rescan after finishing playlist / song download. [Subsonic API reference](https://www.navidrome.org/docs/developers/subsonic-api/)
 </details>
+
+---
+
+## Why Dromeport over others?
+
+Dromeport stands out from other similar purpose tools. Designed for Navidrome users (although you don't have to be one), it lets you effortlessly update your library while offering features most alternatives don't have.
+
+- **Multiple sources** - Download from both Spotify and YouTube Music.
+
+- **Best quality** - Lossless (FLAC) from Spotify, high-quality lossy from YouTube Music (Opus).
+
+- **Clean and simple interface** - A clean, simple interface keeps your library management straightforward.
 
 ---
 
@@ -67,15 +80,17 @@ Per new library you add, you must `+1` to the `*` in `DROMEPORT_LIBRARY_*` other
 
 ---
 
-## Issues and Improvements
+## Issues, Improvements, and Contributing
 
 Dromeport is currently in beta. If something breaks or doesn't work as expected, or you would just like to request an improvement, please open an issue at [github.com/sensor0x0/dromeport/issues](https://github.com/sensor0x0/dromeport/issues).
+
+> Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
 ---
 
 ## Small note
 
-Some parts of this project were generated with AI (sorry purists, haha), but I’ve reviewed it and fully understand all of its output.
+Many parts of this project were generated with AI (sorry purists, haha), but I have reviewed it and fully understand all of its output.
 
 ---
 

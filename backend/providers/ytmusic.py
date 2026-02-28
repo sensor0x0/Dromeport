@@ -28,6 +28,7 @@ async def download_ytmusic_stream(
     yt_config: dict = config.get("ytMusic", {})
     audio_format: str = yt_config.get("quality", "opus")
     embed_metadata: bool = yt_config.get("embedMetadata", True)
+    enrich_metadata: bool = yt_config.get("enrichMetadata", True)
     playlist_mode: str = config.get("playlistMode", "flat")
     playlist_folder: str = config.get("_playlist_folder", "").strip()
     playlist = _is_playlist_url(url)
@@ -37,7 +38,6 @@ async def download_ytmusic_stream(
         if playlist_folder:
             output_base = os.path.join(library_path, playlist_folder)
         else:
-            # Let yt-dlp use its own %(playlist_title)s variable
             output_base = os.path.join(library_path, "%(playlist_title)s")
     else:
         output_base = library_path
@@ -61,6 +61,8 @@ async def download_ytmusic_stream(
         "--ignore-errors",
         "--newline",
         "--no-colors",
+        # Write the source URL into the file tags so enrichment can find the video ID
+        "--add-metadata",
     ]
 
     if not playlist:
@@ -90,6 +92,10 @@ async def download_ytmusic_stream(
     total_count = 0
     final_title: str | None = None
     thumb_emitted = False
+
+    # Track video ID then downloaded filepath for enrichment
+    current_video_id: str | None = None
+    downloaded_files: list[tuple[str, str | None]] = []  # (filepath, video_id)
 
     try:
         process = await asyncio.create_subprocess_exec(
@@ -124,22 +130,32 @@ async def download_ytmusic_stream(
                 total_count = tot
                 yield _meta({"type": "progress", "current": cur, "total": tot})
 
+            # Capture the video ID for the current track being processed
+            elif m := re.search(r"\[youtube\] ([A-Za-z0-9_-]{11}): Downloading", line):
+                current_video_id = m.group(1)
+
             # Grab thumbnail from first video URL
             elif not thumb_emitted and (
                 m := re.search(r"\[youtube\] Extracting URL: .+watch\?v=([A-Za-z0-9_-]{11})", line)
             ):
-                yield _meta({"type": "thumb", "url": f"https://img.youtube.com/vi/{m.group(1)}/mqdefault.jpg"})
+                vid = m.group(1)
+                if not current_video_id:
+                    current_video_id = vid
+                yield _meta({"type": "thumb", "url": f"https://img.youtube.com/vi/{vid}/mqdefault.jpg"})
                 thumb_emitted = True
 
-            # Track completed
+            # Track completed - capture the output filepath
             elif "[ExtractAudio] Destination:" in line:
                 downloaded_count += 1
-                if not playlist:
-                    if m := re.search(r"Destination:\s+(.+)$", line):
-                        final_title = os.path.splitext(os.path.basename(m.group(1).strip()))[0]
+                if m := re.search(r"Destination:\s+(.+)$", line):
+                    filepath = m.group(1).strip()
+                    downloaded_files.append((filepath, current_video_id))
+                    if not playlist:
+                        final_title = os.path.splitext(os.path.basename(filepath))[0]
                         yield _meta({"type": "title", "value": final_title})
-                else:
-                    yield _meta({"type": "progress", "current": downloaded_count, "total": total_count})
+                    else:
+                        yield _meta({"type": "progress", "current": downloaded_count, "total": total_count})
+                current_video_id = None  # reset for next track
 
             elif line.startswith("ERROR:"):
                 error_count += 1
@@ -188,6 +204,23 @@ async def download_ytmusic_stream(
                 yield f"data: ✅ Done! '{final_title}' saved to '{library_path}' as {audio_format.upper()}.\n\n"
             else:
                 yield f"data: ✅ Download complete! File saved to '{library_path}'.\n\n"
+
+        # Metadata enrichment pass
+        if enrich_metadata and downloaded_files:
+            yield "data: \n\n"
+            try:
+                from metadata import enrich_ytmusic_file
+                for filepath, video_id in downloaded_files:
+                    if os.path.exists(filepath):
+                        async for chunk in enrich_ytmusic_file(
+                            filepath=filepath,
+                            ytmusic_url=f"https://www.youtube.com/watch?v={video_id}" if video_id else None,
+                            config=config,
+                        ):
+                            yield chunk
+            except Exception as enrich_err:
+                yield f"data: ⚠️  Metadata enrichment error: {enrich_err}\n\n"
+
     else:
         yield f"data: ❌ yt-dlp exited with code {process.returncode}.\n\n"
 

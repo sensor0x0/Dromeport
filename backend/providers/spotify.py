@@ -13,7 +13,7 @@ from contextlib import redirect_stdout
 from typing import AsyncGenerator, Any
 
 from SpotiFLAC import SpotiFLAC
-
+from metadata import enrich_directory
 
 # Helpers
 
@@ -25,11 +25,10 @@ def _is_playlist_url(url: str) -> bool:
 def _meta(payload: dict) -> str:
     return f"event: meta\ndata: {json.dumps(payload)}\n\n"
 
-
 # Stdout capture
 
 class _LineQueue(io.TextIOBase):
-    """Replacement stdout that feeds each complete line into a queue."""
+    # Replacement stdout that feeds each line into a queue
 
     def __init__(self, q: "queue.Queue[str | None]") -> None:
         self._q = q
@@ -47,14 +46,10 @@ class _LineQueue(io.TextIOBase):
             self._q.put(self._buf)
             self._buf = ""
 
-
-# Cancellation
+# Cancellation proxy
 
 class _ThreadJobProxy:
-    """
-    Matches the asyncio.subprocess.Process interface so main.py's cancel
-    handler works unchanged — it just calls terminate() / kill() / wait().
-    """
+    # Proxy object to allow signalling cancellation to the thread running SpotiFLAC, and to report back its return code if needed.
 
     def __init__(self, cancel_event: threading.Event) -> None:
         self._cancel = cancel_event
@@ -82,7 +77,7 @@ async def download_spotify_stream(
         yield chunk
 
 
-# Core stream
+# Core streaming logic
 
 async def _spotiflac_stream(
     url: str,
@@ -191,7 +186,7 @@ async def _spotiflac_stream(
                     timeout=300.0,
                 )
             except asyncio.TimeoutError:
-                yield "data: No output from SpotiFLAC for 5 minutes — it may be hung.\n\n"
+                yield "data: No output from SpotiFLAC for 5 minutes.\n\n"
                 had_fatal_error = True
                 break
 
@@ -261,6 +256,9 @@ async def _spotiflac_stream(
 
     yield "data: \n\n"
 
+    # A download where every track failed is not a success, even if SpotiFLAC
+    # itself exited cleanly.  Only applies when we actually tried something
+    # (total_count > 0), pure metadata errors are caught by had_fatal_error.
     complete_failure = errors > 0 and downloaded == 0 and total_count > 0
     success = not had_fatal_error and not was_cancelled and not complete_failure
 
@@ -279,6 +277,12 @@ async def _spotiflac_stream(
             yield f"data:   Already existed   : {skipped} (skipped)\n\n"
         if errors:
             yield f"data:   ⚠️  Failed          : {errors}\n\n"
+
+        # Metadata enrichment pass
+        if config.get("spotify", {}).get("enrichMetadata", True):
+            yield "data: \n\n"
+            async for chunk in enrich_directory(output_dir, url, config):
+                yield chunk
 
         if output_format != "flac":
             yield "data: \n\n"
