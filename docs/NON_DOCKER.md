@@ -6,7 +6,7 @@
 - [Node.js 20+](https://nodejs.org/en/download)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (`pip install yt-dlp`)
 - [ffmpeg](https://www.ffmpeg.org/)
-- [SpotiFLAC-CLI](https://github.com/jelte1/SpotiFLAC-Command-Line-Interface) (clone manually and set the path in the Configuration tab)
+- [SpotiFLAC-CLI](https://github.com/jelte1/SpotiFLAC-Command-Line-Interface) (`pip install spotiflac`)
 
 ### 1. Clone the repository
 ```bash

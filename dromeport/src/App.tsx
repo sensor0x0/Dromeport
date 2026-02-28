@@ -62,8 +62,6 @@ interface DockerLibrary {
 
 interface ServerConfig {
   libraries: DockerLibrary[];
-  spotiflacPath: string;
-  isDocker: boolean;
 }
 
 interface ToolVersions {
@@ -92,7 +90,6 @@ interface AppConfig {
   libraryPath: string;
   playlistMode: "flat" | "folder";
   spotify: {
-    spotiflacPath: string;
     spotiflacService: string;
     spotiflacLoop: number;
     spotiflacArtistSubfolders: boolean;
@@ -131,7 +128,6 @@ const DEFAULT_CONFIG: AppConfig = {
   libraryPath: "",
   playlistMode: "flat",
   spotify: {
-    spotiflacPath: "",
     spotiflacService: "tidal",
     spotiflacLoop: 0,
     spotiflacArtistSubfolders: false,
@@ -608,8 +604,8 @@ function ToolsCard({ versions, onRefreshVersions }: ToolsCardProps) {
           </Button>
         </div>
         <CardDescription>
-          yt-dlp and SpotiFLAC are bundled in this image. Updates run inside the
-          container - no rebuild needed.
+          yt-dlp and SpotiFLAC are installed as pip packages. Use Update All to
+          upgrade them in place without restarting.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1320,8 +1316,8 @@ function App() {
   const activeJobIdRef = useRef<string | null>(null);
 
   const ActiveIcon = provider === "Spotify" ? SiSpotify : SiYoutubemusic;
-  const isDockerMode = serverConfig?.isDocker ?? false;
   const dockerLibraries = serverConfig?.libraries ?? [];
+  const isDockerMode = dockerLibraries.length > 0;
 
   const [config, setConfig] = useState<AppConfig>(() => {
     try {
@@ -1356,7 +1352,7 @@ function App() {
         }
       })
       .catch(() => {
-        setServerConfig({ libraries: [], spotiflacPath: "", isDocker: false });
+        setServerConfig({ libraries: [] });
       });
   }, []);
 
@@ -1535,6 +1531,17 @@ function App() {
                 total: data.total ?? 0,
               });
               break;
+          }
+        } catch {
+          /* ignore */
+        }
+      });
+
+      es.addEventListener("status", (e: MessageEvent<string>) => {
+        try {
+          const data = JSON.parse(e.data) as { success: boolean };
+          if (!data.success) {
+            updateQueue(activeJobIdRef.current!, { status: "error" });
           }
         } catch {
           /* ignore */
@@ -2112,7 +2119,7 @@ function App() {
                         <CardTitle className="text-lg">Spotify</CardTitle>
                       </div>
                       <a
-                        href="https://github.com/jelte1/SpotiFLAC-Command-Line-Interface"
+                        href="https://pypi.org/project/SpotiFLAC/"
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -2126,45 +2133,6 @@ function App() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* SpotiFLAC path - hidden in Docker (pre-installed) */}
-                    {isDockerMode ? (
-                      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium">
-                            SpotiFLAC is pre-installed
-                          </p>
-                          <code className="text-xs text-muted-foreground font-mono">
-                            {serverConfig?.spotiflacPath ??
-                              "/opt/spotiflac/launcher.py"}
-                          </code>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold">
-                          SpotiFLAC Path
-                          <span className="ml-2 text-xs font-normal text-muted-foreground">
-                            (path to binary or launcher.py)
-                          </span>
-                        </Label>
-                        <Input
-                          value={config.spotify.spotiflacPath}
-                          onChange={(e) =>
-                            setSpotify("spotiflacPath", e.target.value)
-                          }
-                          placeholder="/opt/SpotiFLAC/SpotiFLAC-Linux-x64  or  /opt/SpotiFLAC/launcher.py"
-                          className="bg-background font-mono text-sm"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          For a binary, make sure it's executable:{" "}
-                          <code className="font-mono bg-muted px-1 rounded">
-                            chmod +x /path/to/SpotiFLAC
-                          </code>
-                        </p>
-                      </div>
-                    )}
-
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wider">
                         Music Service
@@ -2315,13 +2283,10 @@ function App() {
                   </CardContent>
                 </Card>
 
-                {/* Bundled tools card - only shown in Docker mode */}
-                {isDockerMode && (
-                  <ToolsCard
-                    versions={toolVersions}
-                    onRefreshVersions={fetchVersions}
-                  />
-                )}
+                <ToolsCard
+                  versions={toolVersions}
+                  onRefreshVersions={fetchVersions}
+                />
               </div>
             )}
           </div>

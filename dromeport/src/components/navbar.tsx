@@ -24,7 +24,7 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 Dromeport
               </span>
               <span className="text-xs text-muted-foreground font-medium">
-                v0.1.0-beta
+                v0.2.0-beta
               </span>
             </div>
 

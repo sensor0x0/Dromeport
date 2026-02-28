@@ -4,3 +4,4 @@ fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 mutagen>=1.47.0
 apscheduler>=3.10.4
+SpotiFLAC>=0.1.4

@@ -8,17 +8,14 @@ from typing import Any, AsyncGenerator
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
-# Stored alongside main.py
 _SYNC_DATA_FILE = pathlib.Path(__file__).parent / "sync_playlists.json"
 
 
 class SyncManager:
-    def __init__(self, spotiflac_path: str = ""):
+    def __init__(self):
         self._path = _SYNC_DATA_FILE
         self._playlists: dict[str, dict] = {}
         self._scheduler = AsyncIOScheduler()
-        # Needed so scheduled runs can inject the spotiflac path just like the download endpoint does
-        self._spotiflac_path = spotiflac_path
         self._load()
 
     def start(self):
@@ -66,7 +63,6 @@ class SyncManager:
             "name": data["name"],
             "thumb": data.get("thumb"),
             "provider": data["provider"],
-            # Full config snapshot so scheduled runs use the right settings
             "config": data["config"],
             "playlist_folder": data.get("playlist_folder", ""),
             "schedule_type": data.get("schedule_type", "interval"),
@@ -96,7 +92,6 @@ class SyncManager:
             if key in data:
                 playlist[key] = data[key]
         self._save()
-        # Reschedule with updated settings
         self._unschedule_playlist(pid)
         if playlist["enabled"]:
             self._schedule_playlist(playlist)
@@ -128,7 +123,6 @@ class SyncManager:
                 **{unit: value},
             )
         else:
-            # cron
             time_str = playlist.get("cron_time", "08:00")
             try:
                 hour, minute = time_str.split(":")
@@ -143,7 +137,6 @@ class SyncManager:
             elif days == "daily":
                 day_of_week = "*"
             else:
-                # specific day e.g. "mon", "tue"
                 day_of_week = days
 
             self._scheduler.add_job(
@@ -171,21 +164,54 @@ class SyncManager:
 
     def _build_config(self, playlist: dict) -> dict:
         config = dict(playlist["config"])
-        if self._spotiflac_path and not config.get("spotify", {}).get("spotiflacPath", "").strip():
-            config.setdefault("spotify", {})["spotiflacPath"] = self._spotiflac_path
         playlist_folder = playlist.get("playlist_folder", "")
         if playlist_folder:
             config["playlistMode"] = "folder"
             config["_playlist_folder"] = playlist_folder
-        # Never use artist/album subfolders for sync - the playlist folder is the organisation
+        # Never use artist/album subfolders for sync — the playlist folder is
+        # the intended organisation unit.
         config.setdefault("spotify", {})["spotiflacArtistSubfolders"] = False
         config.setdefault("spotify", {})["spotiflacAlbumSubfolders"] = False
         return config
 
+    # Status parsing
+
+    def _parse_chunk(
+        self,
+        chunk: str,
+        log_lines: list[str],
+        status_holder: list[str],
+    ) -> None:
+        """
+        Parse one SSE chunk and update log_lines / status_holder.
+
+        Named status event (emitted by both providers at the end):
+            event: status
+            data: {"success": true, ...}
+
+        Plain data event:
+            data: some text
+        """
+        if chunk.startswith("event: status\n"):
+            for raw_line in chunk.split("\n"):
+                if raw_line.startswith("data: "):
+                    try:
+                        payload = json.loads(raw_line[6:])
+                        if not payload.get("success", True):
+                            status_holder[0] = "error"
+                    except (json.JSONDecodeError, ValueError):
+                        status_holder[0] = "error"
+            return  # status events don't go into the human-readable log
+
+        if chunk.startswith("data: "):
+            line = chunk[6:].rstrip("\n")
+            if line and line != "[DONE]":
+                log_lines.append(line)
+
     # Sync execution
 
     async def _run_sync_job(self, pid: str):
-        """Background scheduled sync. Runs silently and saves the result."""
+        """Background scheduled sync — runs silently and saves the result."""
         playlist = self._playlists.get(pid)
         if not playlist:
             return
@@ -199,32 +225,27 @@ class SyncManager:
         job_id = f"scheduled_{pid}_{uuid.uuid4().hex[:8]}"
         registry: dict[str, Any] = {}
         log_lines: list[str] = []
-        status = "success"
+        status_holder = ["success"]
 
         try:
-            if provider == "YouTube Music":
-                gen = download_ytmusic_stream(url, config, job_id, registry)
-            else:
-                gen = download_spotify_stream(url, config, job_id, registry)
-
+            gen = (
+                download_ytmusic_stream(url, config, job_id, registry)
+                if provider == "YouTube Music"
+                else download_spotify_stream(url, config, job_id, registry)
+            )
             async for chunk in gen:
-                if chunk.startswith("data: "):
-                    line = chunk[6:].rstrip("\n")
-                    if line and line != "[DONE]":
-                        log_lines.append(line)
-                        if "SpotiFLAC exited with code" in line or line.startswith("❌ Could not launch") or line.startswith("❌ Unexpected"):
-                            status = "error"
-        except Exception as e:
-            log_lines.append(f"Sync error: {e}")
-            status = "error"
+                self._parse_chunk(chunk, log_lines, status_holder)
+        except Exception as exc:
+            log_lines.append(f"Sync error: {exc}")
+            status_holder[0] = "error"
 
-        self._update_sync_result(pid, status, "\n".join(log_lines))
+        self._update_sync_result(pid, status_holder[0], "\n".join(log_lines))
 
     async def run_sync_stream(self, pid: str) -> AsyncGenerator[str, None]:
-        """Manual sync with live SSE output."""
+        """Manual sync — same logic as _run_sync_job but with live SSE output."""
         playlist = self._playlists.get(pid)
         if not playlist:
-            yield "data: ❌ Playlist not found.\n\n"
+            yield "data: Playlist not found.\n\n"
             yield "data: [DONE]\n\n"
             return
 
@@ -237,34 +258,27 @@ class SyncManager:
         job_id = str(uuid.uuid4())
         registry: dict[str, Any] = {}
         log_lines: list[str] = []
-        status = "success"
+        status_holder = ["success"]
 
         try:
-            if provider == "YouTube Music":
-                gen = download_ytmusic_stream(url, config, job_id, registry)
-            else:
-                gen = download_spotify_stream(url, config, job_id, registry)
-
+            gen = (
+                download_ytmusic_stream(url, config, job_id, registry)
+                if provider == "YouTube Music"
+                else download_spotify_stream(url, config, job_id, registry)
+            )
             async for chunk in gen:
                 yield chunk
-                if chunk.startswith("data: "):
-                    line = chunk[6:].rstrip("\n")
-                    if line and line != "[DONE]":
-                        log_lines.append(line)
-                        if "SpotiFLAC exited with code" in line or line.startswith("❌ Could not launch") or line.startswith("❌ Unexpected"):
-                            status = "error"
-        except Exception as e:
-            yield f"data: ❌ Sync error: {e}\n\n"
+                self._parse_chunk(chunk, log_lines, status_holder)
+        except Exception as exc:
+            yield f"data: Sync error: {exc}\n\n"
             yield "data: [DONE]\n\n"
-            status = "error"
+            status_holder[0] = "error"
         finally:
-            # Always save the result, even if the client disconnected mid-stream
-            self._update_sync_result(pid, status, "\n".join(log_lines))
+            self._update_sync_result(pid, status_holder[0], "\n".join(log_lines))
 
     def _update_sync_result(self, pid: str, status: str, log: str):
         if pid in self._playlists:
             self._playlists[pid]["last_synced_at"] = datetime.utcnow().isoformat()
             self._playlists[pid]["last_sync_status"] = status
-            # Keep the last 5000 chars so the file doesn't grow forever
             self._playlists[pid]["last_sync_log"] = log[-5000:] if log else ""
             self._save()
