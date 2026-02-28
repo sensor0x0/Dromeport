@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: dromeport  # lowercase
+  IMAGE_NAME: dromeport
 
 jobs:
   build-and-push:

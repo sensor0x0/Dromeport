@@ -11,13 +11,18 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container max-w-screen-2xl mx-auto px-4">
-
         {/* Main row - logo, desktop nav, and action buttons */}
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-baseline gap-1.5">
-              <img src="/dromeport.svg" alt="Dromeport" className="h-6 w-6 sm:h-7 sm:w-7 self-center dark:invert" />
-              <span className="font-bold text-lg tracking-tight">Dromeport</span>
+              <img
+                src="/dromeport.svg"
+                alt="Dromeport"
+                className="h-6 w-6 sm:h-7 sm:w-7 self-center dark:invert"
+              />
+              <span className="font-bold text-lg tracking-tight">
+                Dromeport
+              </span>
               <span className="text-xs text-muted-foreground font-medium">
                 v0.1.0-beta
               </span>
@@ -28,7 +33,9 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
               <button
                 onClick={() => setActiveTab("download")}
                 className={`cursor-pointer transition-colors hover:text-foreground/80 ${
-                  activeTab === "download" ? "text-foreground" : "text-foreground/60"
+                  activeTab === "download"
+                    ? "text-foreground"
+                    : "text-foreground/60"
                 }`}
               >
                 Download
@@ -36,16 +43,22 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
               <button
                 onClick={() => setActiveTab("sync")}
                 className={`cursor-pointer transition-colors hover:text-foreground/80 ${
-                  activeTab === "sync" ? "text-foreground" : "text-foreground/60"
+                  activeTab === "sync"
+                    ? "text-foreground"
+                    : "text-foreground/60"
                 }`}
               >
                 Synchronisation{" "}
-                <span className="text-[10px] text-muted-foreground font-normal">beta</span>
+                <span className="text-[10px] text-muted-foreground font-normal">
+                  beta
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab("config")}
                 className={`cursor-pointer transition-colors hover:text-foreground/80 ${
-                  activeTab === "config" ? "text-foreground" : "text-foreground/60"
+                  activeTab === "config"
+                    ? "text-foreground"
+                    : "text-foreground/60"
                 }`}
               >
                 Configuration
@@ -89,7 +102,9 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             }`}
           >
             Sync{" "}
-            <span className="text-[10px] text-muted-foreground font-normal">beta</span>
+            <span className="text-[10px] text-muted-foreground font-normal">
+              beta
+            </span>
           </button>
           <button
             onClick={() => setActiveTab("config")}
@@ -102,7 +117,6 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
             Config
           </button>
         </nav>
-
       </div>
     </header>
   );

@@ -5,7 +5,10 @@
 Add the `dromeport` service to your Navidrome instance's compose file.
 Make sure your volume paths are the same as used by Navidrome, but without using `:ro` so that Dromeport can write to them.
 
+> Make sure after inputting the path (`"/path/to/music"`) you also append `:/music` which will assign it to `/music`, e.g. `/path/to/music:/music`.
+
 Example of a `docker-compose.yml`:
+
 ```yaml
 services:
   navidrome:

@@ -1,9 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { SiSpotify, SiYoutubemusic, SiGithub } from "react-icons/si";
 import {
-  X, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle,
-  AlertTriangle, Pencil, Check, Info, RefreshCw, Package,
-  Plus, Play, Trash2, Timer, Calendar, RotateCw,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Pencil,
+  Check,
+  Info,
+  RefreshCw,
+  Package,
+  Plus,
+  Play,
+  Trash2,
+  Timer,
+  Calendar,
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -180,15 +195,21 @@ function formatTimeUntil(isoString: string | null): string {
 
 function describeSchedule(p: SyncPlaylist): string {
   if (p.schedule_type === "interval") {
-    const unit = p.interval_value === 1
-      ? p.interval_unit.slice(0, -1)
-      : p.interval_unit;
+    const unit =
+      p.interval_value === 1 ? p.interval_unit.slice(0, -1) : p.interval_unit;
     return `Every ${p.interval_value} ${unit}`;
   }
   const dayLabel: Record<string, string> = {
-    daily: "Daily", weekdays: "Weekdays", weekends: "Weekends",
-    mon: "Mondays", tue: "Tuesdays", wed: "Wednesdays",
-    thu: "Thursdays", fri: "Fridays", sat: "Saturdays", sun: "Sundays",
+    daily: "Daily",
+    weekdays: "Weekdays",
+    weekends: "Weekends",
+    mon: "Mondays",
+    tue: "Tuesdays",
+    wed: "Wednesdays",
+    thu: "Thursdays",
+    fri: "Fridays",
+    sat: "Saturdays",
+    sun: "Sundays",
   };
   const days = dayLabel[p.cron_days] ?? p.cron_days;
   return `${days} at ${p.cron_time}`;
@@ -203,10 +224,17 @@ interface QueueCardProps {
   onToggleLogs: (id: string) => void;
 }
 
-function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps) {
+function QueueCard({
+  item,
+  tick: _tick,
+  onCancel,
+  onToggleLogs,
+}: QueueCardProps) {
   const logsRef = useRef<HTMLTextAreaElement>(null);
   const isActive = item.status === "downloading";
-  const elapsed = Math.floor(((item.finishedAt ?? Date.now()) - item.startedAt) / 1000);
+  const elapsed = Math.floor(
+    ((item.finishedAt ?? Date.now()) - item.startedAt) / 1000,
+  );
   const rate = elapsed > 5 && item.current > 0 ? item.current / elapsed : 0;
   const eta =
     rate > 0 && item.total > item.current
@@ -259,7 +287,11 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
         <div className="flex items-start gap-3">
           <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
             {item.thumb ? (
-              <img src={item.thumb} className="w-full h-full object-cover" alt="" />
+              <img
+                src={item.thumb}
+                className="w-full h-full object-cover"
+                alt=""
+              />
             ) : item.provider === "Spotify" ? (
               <SiSpotify className="w-6 h-6 text-[#1DB954]" />
             ) : (
@@ -270,11 +302,17 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
             <p className="font-medium text-sm truncate leading-tight">
               {item.title === "Loading..." ? (
                 <span className="text-muted-foreground italic">Loading...</span>
-              ) : item.title}
+              ) : (
+                item.title
+              )}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">{item.provider}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {item.provider}
+            </p>
           </div>
-          <div className="flex-shrink-0"><StatusIcon /></div>
+          <div className="flex-shrink-0">
+            <StatusIcon />
+          </div>
         </div>
 
         {progress !== null && (
@@ -293,9 +331,13 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  item.status === "done" ? "bg-green-500" :
-                  item.status === "error" ? "bg-red-500" :
-                  item.status === "cancelled" ? "bg-muted-foreground" : "bg-primary"
+                  item.status === "done"
+                    ? "bg-green-500"
+                    : item.status === "error"
+                      ? "bg-red-500"
+                      : item.status === "cancelled"
+                        ? "bg-muted-foreground"
+                        : "bg-primary"
                 }`}
                 style={{ width: `${progress}%` }}
               />
@@ -313,7 +355,9 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
             <span>{formatTime(elapsed)}</span>
-            {isActive && eta !== null && <span className="ml-1">· ETA ~{formatTime(eta)}</span>}
+            {isActive && eta !== null && (
+              <span className="ml-1">· ETA ~{formatTime(eta)}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {isActive && (
@@ -329,7 +373,11 @@ function QueueCard({ item, tick: _tick, onCancel, onToggleLogs }: QueueCardProps
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent"
             >
               Logs
-              {item.logsOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {item.logsOpen ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
             </button>
           </div>
         </div>
@@ -356,11 +404,18 @@ interface PlaylistModalProps {
   onCancel: () => void;
 }
 
-function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProps) {
+function PlaylistModal({
+  url,
+  provider,
+  onConfirm,
+  onCancel,
+}: PlaylistModalProps) {
   const [name, setName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && name.trim()) onConfirm(name.trim());
@@ -371,13 +426,16 @@ function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProp
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center gap-2 mb-1">
-          {provider === "Spotify"
-            ? <SiSpotify className="w-4 h-4 text-[#1DB954]" />
-            : <SiYoutubemusic className="w-4 h-4 text-[#FF0000]" />}
+          {provider === "Spotify" ? (
+            <SiSpotify className="w-4 h-4 text-[#1DB954]" />
+          ) : (
+            <SiYoutubemusic className="w-4 h-4 text-[#FF0000]" />
+          )}
           <h2 className="text-base font-semibold">Name this playlist folder</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-1">
-          You have <strong>Playlist Folder</strong> mode enabled. Enter the folder name for this download.
+          You have <strong>Playlist Folder</strong> mode enabled. Enter the
+          folder name for this download.
         </p>
         <p className="text-xs text-muted-foreground font-mono truncate mb-4 bg-muted/50 px-2 py-1 rounded">
           {url.length > 60 ? url.slice(0, 57) + "…" : url}
@@ -391,8 +449,14 @@ function PlaylistModal({ url, provider, onConfirm, onCancel }: PlaylistModalProp
           className="mb-4"
         />
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-          <Button size="sm" onClick={() => onConfirm(name.trim())} disabled={!name.trim()}>
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => onConfirm(name.trim())}
+            disabled={!name.trim()}
+          >
             Download
           </Button>
         </div>
@@ -414,7 +478,9 @@ function LibraryRow({ library, displayName, onRename }: LibraryRowProps) {
   const [draft, setDraft] = useState(displayName);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
 
   const commit = () => {
     const trimmed = draft.trim();
@@ -438,12 +504,19 @@ function LibraryRow({ library, displayName, onRename }: LibraryRowProps) {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
-                if (e.key === "Escape") { setDraft(displayName); setEditing(false); }
+                if (e.key === "Escape") {
+                  setDraft(displayName);
+                  setEditing(false);
+                }
               }}
               onBlur={commit}
               className="h-7 text-sm py-0 px-2 bg-background"
             />
-            <button onClick={commit} className="shrink-0 text-green-500 hover:text-green-400 transition-colors" title="Save">
+            <button
+              onClick={commit}
+              className="shrink-0 text-green-500 hover:text-green-400 transition-colors"
+              title="Save"
+            >
               <Check className="w-4 h-4" />
             </button>
           </>
@@ -451,7 +524,10 @@ function LibraryRow({ library, displayName, onRename }: LibraryRowProps) {
           <>
             <span className="text-sm font-medium truncate">{displayName}</span>
             <button
-              onClick={() => { setDraft(displayName); setEditing(true); }}
+              onClick={() => {
+                setDraft(displayName);
+                setEditing(true);
+              }}
               className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
               title="Rename"
             >
@@ -525,16 +601,18 @@ function ToolsCard({ versions, onRefreshVersions }: ToolsCardProps) {
             disabled={updating}
             className="gap-1.5"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${updating ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${updating ? "animate-spin" : ""}`}
+            />
             {updating ? "Updating…" : "Update All"}
           </Button>
         </div>
         <CardDescription>
-          yt-dlp and SpotiFLAC are bundled in this image. Updates run inside the container - no rebuild needed.
+          yt-dlp and SpotiFLAC are bundled in this image. Updates run inside the
+          container - no rebuild needed.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-
         {/* Version table */}
         <div className="rounded-lg border border-border divide-y divide-border">
           <div className="flex items-center justify-between px-3 py-2.5">
@@ -579,7 +657,6 @@ function ToolsCard({ versions, onRefreshVersions }: ToolsCardProps) {
             />
           </div>
         )}
-
       </CardContent>
     </Card>
   );
@@ -593,17 +670,24 @@ interface ScheduleFormProps {
   intervalUnit: "minutes" | "hours" | "days";
   cronTime: string;
   cronDays: string;
-  onChange: (updates: Partial<{
-    scheduleType: "interval" | "cron";
-    intervalValue: number;
-    intervalUnit: "minutes" | "hours" | "days";
-    cronTime: string;
-    cronDays: string;
-  }>) => void;
+  onChange: (
+    updates: Partial<{
+      scheduleType: "interval" | "cron";
+      intervalValue: number;
+      intervalUnit: "minutes" | "hours" | "days";
+      cronTime: string;
+      cronDays: string;
+    }>,
+  ) => void;
 }
 
 function ScheduleForm({
-  scheduleType, intervalValue, intervalUnit, cronTime, cronDays, onChange,
+  scheduleType,
+  intervalValue,
+  intervalUnit,
+  cronTime,
+  cronDays,
+  onChange,
 }: ScheduleFormProps) {
   return (
     <div className="space-y-3">
@@ -647,14 +731,22 @@ function ScheduleForm({
             type="number"
             min={1}
             value={intervalValue}
-            onChange={(e) => onChange({ intervalValue: Math.max(1, parseInt(e.target.value) || 1) })}
+            onChange={(e) =>
+              onChange({
+                intervalValue: Math.max(1, parseInt(e.target.value) || 1),
+              })
+            }
             className="bg-background w-20"
           />
           <Select
             value={intervalUnit}
-            onValueChange={(v) => onChange({ intervalUnit: v as "minutes" | "hours" | "days" })}
+            onValueChange={(v) =>
+              onChange({ intervalUnit: v as "minutes" | "hours" | "days" })
+            }
           >
-            <SelectTrigger className="bg-background w-32"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="bg-background w-32">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="minutes">minutes</SelectItem>
               <SelectItem value="hours">hours</SelectItem>
@@ -666,8 +758,13 @@ function ScheduleForm({
 
       {scheduleType === "cron" && (
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={cronDays} onValueChange={(v) => onChange({ cronDays: v })}>
-            <SelectTrigger className="bg-background w-36"><SelectValue /></SelectTrigger>
+          <Select
+            value={cronDays}
+            onValueChange={(v) => onChange({ cronDays: v })}
+          >
+            <SelectTrigger className="bg-background w-36">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="daily">Every day</SelectItem>
               <SelectItem value="weekdays">Weekdays</SelectItem>
@@ -698,7 +795,16 @@ function ScheduleForm({
 
 interface AddSyncModalProps {
   config: AppConfig;
-  onConfirm: (data: Omit<SyncPlaylist, "id" | "last_synced_at" | "last_sync_status" | "last_sync_log" | "next_run_at"> & { config: AppConfig }) => void;
+  onConfirm: (
+    data: Omit<
+      SyncPlaylist,
+      | "id"
+      | "last_synced_at"
+      | "last_sync_status"
+      | "last_sync_log"
+      | "next_run_at"
+    > & { config: AppConfig },
+  ) => void;
   onCancel: () => void;
 }
 
@@ -707,20 +813,31 @@ function AddSyncModal({ config, onConfirm, onCancel }: AddSyncModalProps) {
   const [name, setName] = useState("");
   const [provider, setProvider] = useState<Provider>("Spotify");
   const [playlistFolder, setPlaylistFolder] = useState("");
-  const [scheduleType, setScheduleType] = useState<"interval" | "cron">("interval");
+  const [scheduleType, setScheduleType] = useState<"interval" | "cron">(
+    "interval",
+  );
   const [intervalValue, setIntervalValue] = useState(24);
-  const [intervalUnit, setIntervalUnit] = useState<"minutes" | "hours" | "days">("hours");
+  const [intervalUnit, setIntervalUnit] = useState<
+    "minutes" | "hours" | "days"
+  >("hours");
   const [cronTime, setCronTime] = useState("08:00");
   const [cronDays, setCronDays] = useState("daily");
   const [enabled, setEnabled] = useState(true);
 
   const urlRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { urlRef.current?.focus(); }, []);
+  useEffect(() => {
+    urlRef.current?.focus();
+  }, []);
 
-  const handleScheduleChange = (updates: Parameters<ScheduleFormProps["onChange"]>[0]) => {
-    if (updates.scheduleType !== undefined) setScheduleType(updates.scheduleType);
-    if (updates.intervalValue !== undefined) setIntervalValue(updates.intervalValue);
-    if (updates.intervalUnit !== undefined) setIntervalUnit(updates.intervalUnit);
+  const handleScheduleChange = (
+    updates: Parameters<ScheduleFormProps["onChange"]>[0],
+  ) => {
+    if (updates.scheduleType !== undefined)
+      setScheduleType(updates.scheduleType);
+    if (updates.intervalValue !== undefined)
+      setIntervalValue(updates.intervalValue);
+    if (updates.intervalUnit !== undefined)
+      setIntervalUnit(updates.intervalUnit);
     if (updates.cronTime !== undefined) setCronTime(updates.cronTime);
     if (updates.cronDays !== undefined) setCronDays(updates.cronDays);
   };
@@ -760,24 +877,28 @@ function AddSyncModal({ config, onConfirm, onCancel }: AddSyncModalProps) {
         <h2 className="text-base font-semibold mb-4">Watch a playlist</h2>
 
         <div className="space-y-4">
-
           {/* Provider and URL */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">URL</Label>
             <div className="flex gap-2">
-              <Select value={provider} onValueChange={(v) => setProvider(v as Provider)}>
+              <Select
+                value={provider}
+                onValueChange={(v) => setProvider(v as Provider)}
+              >
                 <SelectTrigger className="bg-background w-44 shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Spotify">
                     <span className="flex items-center gap-2">
-                      <SiSpotify className="w-3.5 h-3.5 text-[#1DB954]" /> Spotify
+                      <SiSpotify className="w-3.5 h-3.5 text-[#1DB954]" />{" "}
+                      Spotify
                     </span>
                   </SelectItem>
                   <SelectItem value="YouTube Music">
                     <span className="flex items-center gap-2">
-                      <SiYoutubemusic className="w-3.5 h-3.5 text-[#FF0000]" /> YouTube Music
+                      <SiYoutubemusic className="w-3.5 h-3.5 text-[#FF0000]" />{" "}
+                      YouTube Music
                     </span>
                   </SelectItem>
                 </SelectContent>
@@ -807,7 +928,9 @@ function AddSyncModal({ config, onConfirm, onCancel }: AddSyncModalProps) {
           <div className="space-y-2">
             <Label className="text-sm font-semibold">
               Folder Name
-              <span className="ml-2 text-xs font-normal text-muted-foreground">(optional, defaults to name)</span>
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                (optional, defaults to name)
+              </span>
             </Label>
             <Input
               value={playlistFolder}
@@ -816,7 +939,11 @@ function AddSyncModal({ config, onConfirm, onCancel }: AddSyncModalProps) {
               className="bg-background"
             />
             <p className="text-xs text-muted-foreground">
-              Tracks will be saved to <code className="font-mono bg-muted px-1 rounded">{config.libraryPath || "/music"}/{playlistFolder || name || "Chill Mix"}/</code>
+              Tracks will be saved to{" "}
+              <code className="font-mono bg-muted px-1 rounded">
+                {config.libraryPath || "/music"}/
+                {playlistFolder || name || "Chill Mix"}/
+              </code>
             </p>
           </div>
 
@@ -839,15 +966,18 @@ function AddSyncModal({ config, onConfirm, onCancel }: AddSyncModalProps) {
           <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
             <div className="space-y-0.5 pr-4">
               <Label className="text-sm">Enable immediately</Label>
-              <p className="text-xs text-muted-foreground">Start scheduling right after adding</p>
+              <p className="text-xs text-muted-foreground">
+                Start scheduling right after adding
+              </p>
             </div>
             <Switch checked={enabled} onCheckedChange={setEnabled} />
           </div>
-
         </div>
 
         <div className="flex gap-2 justify-end mt-6">
-          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
           <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
             Watch playlist
           </Button>
@@ -865,18 +995,31 @@ interface EditScheduleModalProps {
   onCancel: () => void;
 }
 
-function EditScheduleModal({ playlist, onConfirm, onCancel }: EditScheduleModalProps) {
-  const [scheduleType, setScheduleType] = useState<"interval" | "cron">(playlist.schedule_type);
+function EditScheduleModal({
+  playlist,
+  onConfirm,
+  onCancel,
+}: EditScheduleModalProps) {
+  const [scheduleType, setScheduleType] = useState<"interval" | "cron">(
+    playlist.schedule_type,
+  );
   const [intervalValue, setIntervalValue] = useState(playlist.interval_value);
-  const [intervalUnit, setIntervalUnit] = useState<"minutes" | "hours" | "days">(playlist.interval_unit);
+  const [intervalUnit, setIntervalUnit] = useState<
+    "minutes" | "hours" | "days"
+  >(playlist.interval_unit);
   const [cronTime, setCronTime] = useState(playlist.cron_time);
   const [cronDays, setCronDays] = useState(playlist.cron_days);
   const [enabled, setEnabled] = useState(playlist.enabled);
 
-  const handleScheduleChange = (updates: Parameters<ScheduleFormProps["onChange"]>[0]) => {
-    if (updates.scheduleType !== undefined) setScheduleType(updates.scheduleType);
-    if (updates.intervalValue !== undefined) setIntervalValue(updates.intervalValue);
-    if (updates.intervalUnit !== undefined) setIntervalUnit(updates.intervalUnit);
+  const handleScheduleChange = (
+    updates: Parameters<ScheduleFormProps["onChange"]>[0],
+  ) => {
+    if (updates.scheduleType !== undefined)
+      setScheduleType(updates.scheduleType);
+    if (updates.intervalValue !== undefined)
+      setIntervalValue(updates.intervalValue);
+    if (updates.intervalUnit !== undefined)
+      setIntervalUnit(updates.intervalUnit);
     if (updates.cronTime !== undefined) setCronTime(updates.cronTime);
     if (updates.cronDays !== undefined) setCronDays(updates.cronDays);
   };
@@ -885,9 +1028,11 @@ function EditScheduleModal({ playlist, onConfirm, onCancel }: EditScheduleModalP
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center gap-2 mb-4">
-          {playlist.provider === "Spotify"
-            ? <SiSpotify className="w-4 h-4 text-[#1DB954]" />
-            : <SiYoutubemusic className="w-4 h-4 text-[#FF0000]" />}
+          {playlist.provider === "Spotify" ? (
+            <SiSpotify className="w-4 h-4 text-[#1DB954]" />
+          ) : (
+            <SiYoutubemusic className="w-4 h-4 text-[#FF0000]" />
+          )}
           <h2 className="text-base font-semibold truncate">{playlist.name}</h2>
         </div>
 
@@ -907,22 +1052,31 @@ function EditScheduleModal({ playlist, onConfirm, onCancel }: EditScheduleModalP
           <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
             <div className="space-y-0.5 pr-4">
               <Label className="text-sm">Enabled</Label>
-              <p className="text-xs text-muted-foreground">Pause without deleting</p>
+              <p className="text-xs text-muted-foreground">
+                Pause without deleting
+              </p>
             </div>
             <Switch checked={enabled} onCheckedChange={setEnabled} />
           </div>
         </div>
 
         <div className="flex gap-2 justify-end mt-6">
-          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-          <Button size="sm" onClick={() => onConfirm({
-            schedule_type: scheduleType,
-            interval_value: intervalValue,
-            interval_unit: intervalUnit,
-            cron_time: cronTime,
-            cron_days: cronDays,
-            enabled,
-          })}>
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={() =>
+              onConfirm({
+                schedule_type: scheduleType,
+                interval_value: intervalValue,
+                interval_unit: intervalUnit,
+                cron_time: cronTime,
+                cron_days: cronDays,
+                enabled,
+              })
+            }
+          >
             Save
           </Button>
         </div>
@@ -939,7 +1093,11 @@ interface SyncPlaylistCardProps {
   onDelete: (id: string) => void;
 }
 
-function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps) {
+function SyncPlaylistCard({
+  playlist,
+  onEdit,
+  onDelete,
+}: SyncPlaylistCardProps) {
   const [syncing, setSyncing] = useState(false);
   const [log, setLog] = useState("");
   const [logsOpen, setLogsOpen] = useState(false);
@@ -992,17 +1150,25 @@ function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps)
     };
   };
 
-  const accentColor = playlist.provider === "Spotify" ? "border-l-[#1DB954]" : "border-l-[#FF0000]";
+  const accentColor =
+    playlist.provider === "Spotify"
+      ? "border-l-[#1DB954]"
+      : "border-l-[#FF0000]";
 
   return (
-    <div className={`rounded-lg border border-border border-l-4 ${accentColor} bg-card/60 overflow-hidden transition-all duration-200`}>
+    <div
+      className={`rounded-lg border border-border border-l-4 ${accentColor} bg-card/60 overflow-hidden transition-all duration-200`}
+    >
       <div className="p-4">
         <div className="flex items-start gap-3">
-
           {/* Thumbnail */}
           <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
             {playlist.thumb ? (
-              <img src={playlist.thumb} className="w-full h-full object-cover" alt="" />
+              <img
+                src={playlist.thumb}
+                className="w-full h-full object-cover"
+                alt=""
+              />
             ) : playlist.provider === "Spotify" ? (
               <SiSpotify className="w-6 h-6 text-[#1DB954]" />
             ) : (
@@ -1013,7 +1179,9 @@ function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps)
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-medium text-sm truncate leading-tight">{playlist.name}</p>
+              <p className="font-medium text-sm truncate leading-tight">
+                {playlist.name}
+              </p>
               {!playlist.enabled && (
                 <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">
                   Paused
@@ -1021,7 +1189,8 @@ function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps)
               )}
               {syncing && (
                 <span className="inline-flex items-center gap-1 text-xs text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded-full shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> Running...
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />{" "}
+                  Running...
                 </span>
               )}
               {!syncing && lastStatus === "success" && (
@@ -1035,7 +1204,9 @@ function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps)
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{describeSchedule(playlist)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {describeSchedule(playlist)}
+            </p>
             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -1058,9 +1229,11 @@ function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps)
               title="Sync now"
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
             >
-              {syncing
-                ? <RefreshCw className="w-4 h-4 animate-spin" />
-                : <Play className="w-4 h-4" />}
+              {syncing ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
             </button>
             <button
               onClick={() => onEdit(playlist)}
@@ -1081,10 +1254,13 @@ function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps)
               title="Toggle log"
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
-              {logsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {logsOpen ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </button>
           </div>
-
         </div>
       </div>
 
@@ -1104,14 +1280,19 @@ function SyncPlaylistCard({ playlist, onEdit, onDelete }: SyncPlaylistCardProps)
 // Main app
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"download" | "config" | "sync">("download");
+  const [activeTab, setActiveTab] = useState<"download" | "config" | "sync">(
+    "download",
+  );
   const [provider, setProvider] = useState<Provider>("YouTube Music");
   const [url, setUrl] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [pathError, setPathError] = useState("");
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [tick, setTick] = useState(0);
-  const [pendingDownload, setPendingDownload] = useState<{ url: string; provider: Provider } | null>(null);
+  const [pendingDownload, setPendingDownload] = useState<{
+    url: string;
+    provider: Provider;
+  } | null>(null);
 
   // Server-driven state
   const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
@@ -1123,11 +1304,17 @@ function App() {
   const [editingSync, setEditingSync] = useState<SyncPlaylist | null>(null);
 
   // Library display name overrides persisted in localStorage
-  const [libraryNames, setLibraryNames] = useState<Record<string, string>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("dromeport-library-names") ?? "{}") as Record<string, string>;
-    } catch { return {}; }
-  });
+  const [libraryNames, setLibraryNames] = useState<Record<string, string>>(
+    () => {
+      try {
+        return JSON.parse(
+          localStorage.getItem("dromeport-library-names") ?? "{}",
+        ) as Record<string, string>;
+      } catch {
+        return {};
+      }
+    },
+  );
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const activeJobIdRef = useRef<string | null>(null);
@@ -1147,7 +1334,9 @@ function App() {
         spotify: { ...DEFAULT_CONFIG.spotify, ...(parsed.spotify ?? {}) },
         ytMusic: { ...DEFAULT_CONFIG.ytMusic, ...(parsed.ytMusic ?? {}) },
       };
-    } catch { return DEFAULT_CONFIG; }
+    } catch {
+      return DEFAULT_CONFIG;
+    }
   });
 
   // Effects
@@ -1160,7 +1349,10 @@ function App() {
         setServerConfig(data);
         // Auto-select first library if no path set yet
         if (data.libraries.length > 0 && !config.libraryPath) {
-          setConfig((prev) => ({ ...prev, libraryPath: data.libraries[0].path }));
+          setConfig((prev) => ({
+            ...prev,
+            libraryPath: data.libraries[0].path,
+          }));
         }
       })
       .catch(() => {
@@ -1205,10 +1397,18 @@ function App() {
 
   // Persist library name overrides
   useEffect(() => {
-    localStorage.setItem("dromeport-library-names", JSON.stringify(libraryNames));
+    localStorage.setItem(
+      "dromeport-library-names",
+      JSON.stringify(libraryNames),
+    );
   }, [libraryNames]);
 
-  useEffect(() => () => { eventSourceRef.current?.close(); }, []);
+  useEffect(
+    () => () => {
+      eventSourceRef.current?.close();
+    },
+    [],
+  );
 
   // Config helpers
 
@@ -1221,10 +1421,19 @@ function App() {
     setConfig((prev) => ({ ...prev, playlistMode: val }));
 
   const setYtMusic = (key: keyof AppConfig["ytMusic"], val: string | boolean) =>
-    setConfig((prev) => ({ ...prev, ytMusic: { ...prev.ytMusic, [key]: val } }));
+    setConfig((prev) => ({
+      ...prev,
+      ytMusic: { ...prev.ytMusic, [key]: val },
+    }));
 
-  const setSpotify = (key: keyof AppConfig["spotify"], val: string | boolean | number) =>
-    setConfig((prev) => ({ ...prev, spotify: { ...prev.spotify, [key]: val } }));
+  const setSpotify = (
+    key: keyof AppConfig["spotify"],
+    val: string | boolean | number,
+  ) =>
+    setConfig((prev) => ({
+      ...prev,
+      spotify: { ...prev.spotify, [key]: val },
+    }));
 
   const renameLibrary = (path: string, name: string) =>
     setLibraryNames((prev) => ({ ...prev, [path]: name }));
@@ -1235,11 +1444,15 @@ function App() {
   // Queue helpers
 
   const updateQueue = useCallback((id: string, updates: Partial<QueueItem>) => {
-    setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, ...updates } : q)));
+    setQueue((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...updates } : q)),
+    );
   }, []);
 
   const toggleLogs = useCallback((id: string) => {
-    setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, logsOpen: !q.logsOpen } : q)));
+    setQueue((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, logsOpen: !q.logsOpen } : q)),
+    );
   }, []);
 
   const clearCompleted = () =>
@@ -1249,7 +1462,8 @@ function App() {
 
   const startDownload = useCallback(
     (dlUrl: string, dlProvider: Provider, playlistFolder: string) => {
-      if (!config.libraryPath.trim() || !isAbsolutePath(config.libraryPath)) return;
+      if (!config.libraryPath.trim() || !isAbsolutePath(config.libraryPath))
+        return;
 
       eventSourceRef.current?.close();
       setIsDownloading(true);
@@ -1281,7 +1495,9 @@ function App() {
         ...(playlistFolder ? { playlist_folder: playlistFolder } : {}),
       });
 
-      const es = new EventSource(`${API}/api/download/stream?${params.toString()}`);
+      const es = new EventSource(
+        `${API}/api/download/stream?${params.toString()}`,
+      );
       eventSourceRef.current = es;
 
       es.addEventListener("meta", (e: MessageEvent<string>) => {
@@ -1298,16 +1514,20 @@ function App() {
             case "job_id":
               if (data.value) {
                 setQueue((prev) =>
-                  prev.map((q) => (q.id === currentId ? { ...q, id: data.value! } : q))
+                  prev.map((q) =>
+                    q.id === currentId ? { ...q, id: data.value! } : q,
+                  ),
                 );
                 activeJobIdRef.current = data.value;
               }
               break;
             case "title":
-              if (data.value) updateQueue(activeJobIdRef.current!, { title: data.value });
+              if (data.value)
+                updateQueue(activeJobIdRef.current!, { title: data.value });
               break;
             case "thumb":
-              if (data.url) updateQueue(activeJobIdRef.current!, { thumb: data.url });
+              if (data.url)
+                updateQueue(activeJobIdRef.current!, { thumb: data.url });
               break;
             case "progress":
               updateQueue(activeJobIdRef.current!, {
@@ -1316,7 +1536,9 @@ function App() {
               });
               break;
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       });
 
       es.onmessage = (event: MessageEvent<string>) => {
@@ -1328,20 +1550,30 @@ function App() {
           setQueue((prev) =>
             prev.map((q) =>
               q.id === currentId
-                ? { ...q, status: "done", finishedAt: Date.now(), logsOpen: false }
-                : q
-            )
+                ? {
+                    ...q,
+                    status: "done",
+                    finishedAt: Date.now(),
+                    logsOpen: false,
+                  }
+                : q,
+            ),
           );
           return;
         }
         const line = event.data === "" ? "\n" : "\n" + event.data;
-        const isError = event.data.startsWith("ERROR:") || event.data.includes("❌");
+        const isError =
+          event.data.startsWith("ERROR:") || event.data.includes("❌");
         setQueue((prev) =>
           prev.map((q) =>
             q.id === currentId
-              ? { ...q, logs: q.logs + line, errors: isError ? q.errors + 1 : q.errors }
-              : q
-          )
+              ? {
+                  ...q,
+                  logs: q.logs + line,
+                  errors: isError ? q.errors + 1 : q.errors,
+                }
+              : q,
+          ),
         );
       };
 
@@ -1353,22 +1585,35 @@ function App() {
             setQueue((prev) =>
               prev.map((q) =>
                 q.id === currentId && q.status === "downloading"
-                  ? { ...q, status: "error", finishedAt: Date.now(), logsOpen: true }
-                  : q
-              )
+                  ? {
+                      ...q,
+                      status: "error",
+                      finishedAt: Date.now(),
+                      logsOpen: true,
+                    }
+                  : q,
+              ),
             );
           }
           eventSourceRef.current = null;
         }
       };
     },
-    [config, updateQueue]
+    [config, updateQueue],
   );
 
   const handleDownload = () => {
     if (!url.trim()) return;
-    if (!config.libraryPath.trim()) { setPathError("Path is required."); setActiveTab("config"); return; }
-    if (!isAbsolutePath(config.libraryPath)) { setPathError("Must be an absolute path."); setActiveTab("config"); return; }
+    if (!config.libraryPath.trim()) {
+      setPathError("Path is required.");
+      setActiveTab("config");
+      return;
+    }
+    if (!isAbsolutePath(config.libraryPath)) {
+      setPathError("Must be an absolute path.");
+      setActiveTab("config");
+      return;
+    }
     if (config.playlistMode === "folder" && isPlaylistUrl(url.trim())) {
       setPendingDownload({ url: url.trim(), provider });
       return;
@@ -1390,14 +1635,18 @@ function App() {
     try {
       await fetch(
         `${API}/api/download/${encodeURIComponent(item.id)}?library_path=${encodeURIComponent(item.libraryPath)}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   // Sync helpers
 
-  const handleAddSync = async (data: Parameters<AddSyncModalProps["onConfirm"]>[0]) => {
+  const handleAddSync = async (
+    data: Parameters<AddSyncModalProps["onConfirm"]>[0],
+  ) => {
     try {
       const res = await fetch(`${API}/api/sync/playlists`, {
         method: "POST",
@@ -1408,7 +1657,9 @@ function App() {
         setShowAddSync(false);
         fetchSyncPlaylists();
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleEditSync = async (updates: Partial<SyncPlaylist>) => {
@@ -1423,14 +1674,18 @@ function App() {
         setEditingSync(null);
         fetchSyncPlaylists();
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleDeleteSync = async (id: string) => {
     try {
       await fetch(`${API}/api/sync/playlists/${id}`, { method: "DELETE" });
       setSyncPlaylists((prev) => prev.filter((p) => p.id !== id));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const hasCompleted = queue.some((q) => q.status !== "downloading");
@@ -1469,27 +1724,39 @@ function App() {
 
         <main className="flex justify-center px-4">
           <div className="flex flex-col items-center mt-[8vh] sm:mt-[12vh] w-full max-w-3xl">
-
             {/* Download tab */}
             {activeTab === "download" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/* Page title */}
-                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">Download.</p>
+                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">
+                  Download.
+                </p>
 
                 <div className="w-full flex flex-col sm:flex-row gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex items-center gap-2 shrink-0" disabled={isDownloading}>
+                      <Button
+                        variant="outline"
+                        className="flex items-center gap-2 shrink-0"
+                        disabled={isDownloading}
+                      >
                         <ActiveIcon className="w-4 h-4 shrink-0" />
                         <span className="whitespace-nowrap">{provider}</span>
                         <span className="text-[10px] opacity-50 ml-1">▼</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => setProvider("YouTube Music")} className="cursor-pointer">
-                        <SiYoutubemusic className="w-4 h-4 mr-2 shrink-0" /> YouTube Music
+                      <DropdownMenuItem
+                        onClick={() => setProvider("YouTube Music")}
+                        className="cursor-pointer"
+                      >
+                        <SiYoutubemusic className="w-4 h-4 mr-2 shrink-0" />{" "}
+                        YouTube Music
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setProvider("Spotify")} className="cursor-pointer">
+                      <DropdownMenuItem
+                        onClick={() => setProvider("Spotify")}
+                        className="cursor-pointer"
+                      >
                         <SiSpotify className="w-4 h-4 mr-2 shrink-0" /> Spotify
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -1502,7 +1769,9 @@ function App() {
                     placeholder={`Paste ${provider} link here...`}
                     className="flex-1"
                     disabled={isDownloading}
-                    onKeyDown={(e) => e.key === "Enter" && !isDownloading && handleDownload()}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && !isDownloading && handleDownload()
+                    }
                   />
 
                   <Button
@@ -1526,15 +1795,26 @@ function App() {
                 {queue.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
-                      <span className="text-sm font-semibold text-foreground">Queue</span>
+                      <span className="text-sm font-semibold text-foreground">
+                        Queue
+                      </span>
                       {hasCompleted && (
-                        <button onClick={clearCompleted} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        <button
+                          onClick={clearCompleted}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
                           Clear completed
                         </button>
                       )}
                     </div>
                     {queue.map((item) => (
-                      <QueueCard key={item.id} item={item} tick={tick} onCancel={handleCancel} onToggleLogs={toggleLogs} />
+                      <QueueCard
+                        key={item.id}
+                        item={item}
+                        tick={tick}
+                        onCancel={handleCancel}
+                        onToggleLogs={toggleLogs}
+                      />
                     ))}
                   </div>
                 )}
@@ -1544,7 +1824,9 @@ function App() {
                     <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
                       <SiYoutubemusic className="w-6 h-6 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Paste a link above to start downloading</p>
+                    <p className="text-sm text-muted-foreground">
+                      Paste a link above to start downloading
+                    </p>
                   </div>
                 )}
               </div>
@@ -1554,16 +1836,27 @@ function App() {
             {activeTab === "sync" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/* Page title */}
-                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">Sync.</p>
+                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">
+                  Sync.
+                </p>
 
                 <div className="flex items-center justify-between px-1">
                   <div>
-                    <h2 className="text-lg font-semibold">Synchronisation <span className="text-xs font-normal text-muted-foreground">(beta)</span></h2>
+                    <h2 className="text-lg font-semibold">
+                      Synchronisation{" "}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        (beta)
+                      </span>
+                    </h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Watch playlists and keep them in sync automatically.
                     </p>
                   </div>
-                  <Button size="sm" onClick={() => setShowAddSync(true)} className="gap-1.5">
+                  <Button
+                    size="sm"
+                    onClick={() => setShowAddSync(true)}
+                    className="gap-1.5"
+                  >
                     <Plus className="w-4 h-4" /> Watch playlist
                   </Button>
                 </div>
@@ -1586,9 +1879,12 @@ function App() {
                     <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
                       <RotateCw className="w-6 h-6 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">No watched playlists yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No watched playlists yet.
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Click <strong>Watch playlist</strong> to start syncing one automatically.
+                      Click <strong>Watch playlist</strong> to start syncing one
+                      automatically.
                     </p>
                   </div>
                 )}
@@ -1599,28 +1895,36 @@ function App() {
             {activeTab === "config" && (
               <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/* Page title */}
-                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">Config.</p>
+                <p className="text-2xl font-light text-muted-foreground/50 tracking-tight select-none">
+                  Config.
+                </p>
 
                 {/* Global config */}
                 <Card className="w-full bg-card/50 backdrop-blur-sm border-border/50">
                   <CardHeader>
                     <CardTitle className="text-xl">Configuration</CardTitle>
-                    <CardDescription>Changes are saved automatically.</CardDescription>
+                    <CardDescription>
+                      Changes are saved automatically.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-
                     {/* Library selector */}
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold">
                         Library
                         <span className="ml-2 text-xs font-normal text-muted-foreground">
-                          {isDockerMode ? "select a destination" : "(absolute path)"}
+                          {isDockerMode
+                            ? "select a destination"
+                            : "(absolute path)"}
                         </span>
                       </Label>
 
                       {isDockerMode ? (
                         <>
-                          <Select value={config.libraryPath} onValueChange={setLibraryPath}>
+                          <Select
+                            value={config.libraryPath}
+                            onValueChange={setLibraryPath}
+                          >
                             <SelectTrigger className="bg-background w-full">
                               <SelectValue placeholder="Select a library…" />
                             </SelectTrigger>
@@ -1636,10 +1940,16 @@ function App() {
                           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             <span>
-                              Can't find your library? Make sure you've added the correct{" "}
-                              <code className="font-mono bg-muted px-1 rounded">DROMEPORT_LIBRARY_*</code>{" "}
+                              Can't find your library? Make sure you've added
+                              the correct{" "}
+                              <code className="font-mono bg-muted px-1 rounded">
+                                DROMEPORT_LIBRARY_*
+                              </code>{" "}
                               environment variables in your{" "}
-                              <code className="font-mono bg-muted px-1 rounded">docker-compose.yml</code>.
+                              <code className="font-mono bg-muted px-1 rounded">
+                                docker-compose.yml
+                              </code>
+                              .
                             </span>
                           </p>
 
@@ -1656,7 +1966,8 @@ function App() {
                               />
                             ))}
                             <p className="text-xs text-muted-foreground">
-                              Click <Pencil className="inline w-3 h-3 mx-0.5" /> to rename. Container paths are read-only.
+                              Click <Pencil className="inline w-3 h-3 mx-0.5" />{" "}
+                              to rename. Container paths are read-only.
                             </p>
                           </div>
                         </>
@@ -1667,14 +1978,23 @@ function App() {
                             value={config.libraryPath}
                             onChange={(e) => setLibraryPath(e.target.value)}
                             onBlur={() => {
-                              if (config.libraryPath && !isAbsolutePath(config.libraryPath))
-                                setPathError("Must be an absolute path (e.g. /home/user/Music).");
+                              if (
+                                config.libraryPath &&
+                                !isAbsolutePath(config.libraryPath)
+                              )
+                                setPathError(
+                                  "Must be an absolute path (e.g. /home/user/Music).",
+                                );
                               else setPathError("");
                             }}
                             placeholder="/home/user/Music"
                             className={`bg-background font-mono text-sm ${pathError ? "border-destructive" : ""}`}
                           />
-                          {pathError && <p className="text-destructive text-xs">{pathError}</p>}
+                          {pathError && (
+                            <p className="text-destructive text-xs">
+                              {pathError}
+                            </p>
+                          )}
                         </>
                       )}
                     </div>
@@ -1684,9 +2004,12 @@ function App() {
                     {/* Playlist mode */}
                     <div className="space-y-3">
                       <div>
-                        <Label className="text-sm font-semibold">Playlist Download Mode</Label>
+                        <Label className="text-sm font-semibold">
+                          Playlist Download Mode
+                        </Label>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          How to organise tracks when downloading a playlist or album. Applies to both providers.
+                          How to organise tracks when downloading a playlist or
+                          album. Applies to both providers.
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -1713,11 +2036,11 @@ function App() {
                       </div>
                       {config.playlistMode === "folder" && (
                         <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-                          💡 You'll be prompted to name the folder before each playlist download starts.
+                          💡 You'll be prompted to name the folder before each
+                          playlist download starts.
                         </p>
                       )}
                     </div>
-
                   </CardContent>
                 </Card>
 
@@ -1729,29 +2052,48 @@ function App() {
                         <SiYoutubemusic className="w-5 h-5 text-[#FF0000]" />
                         <CardTitle className="text-lg">YouTube Music</CardTitle>
                       </div>
-                      <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <a
+                        href="https://github.com/yt-dlp/yt-dlp"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
                         <SiGithub className="w-3.5 h-3.5" /> yt-dlp
                       </a>
                     </div>
-                    <CardDescription>Downloads via yt-dlp. Supports tracks and playlists.</CardDescription>
+                    <CardDescription>
+                      Downloads via yt-dlp. Supports tracks and playlists.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Format</Label>
-                      <Select value={config.ytMusic.quality} onValueChange={(v) => setYtMusic("quality", v)}>
-                        <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Format
+                      </Label>
+                      <Select
+                        value={config.ytMusic.quality}
+                        onValueChange={(v) => setYtMusic("quality", v)}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="opus">Opus - best quality, smallest size</SelectItem>
+                          <SelectItem value="opus">
+                            Opus - best quality, smallest size
+                          </SelectItem>
                           <SelectItem value="m4a">M4A (AAC)</SelectItem>
-                          <SelectItem value="mp3">MP3 (VBR ~320 kbps)</SelectItem>
+                          <SelectItem value="mp3">
+                            MP3 (VBR ~320 kbps)
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
                       <div className="space-y-0.5 pr-4">
                         <Label className="text-sm">Embed Metadata</Label>
-                        <p className="text-xs text-muted-foreground">Title, artist, album, cover art</p>
+                        <p className="text-xs text-muted-foreground">
+                          Title, artist, album, cover art
+                        </p>
                       </div>
                       <Switch
                         checked={config.ytMusic.embedMetadata}
@@ -1769,25 +2111,32 @@ function App() {
                         <SiSpotify className="w-5 h-5 text-[#1DB954]" />
                         <CardTitle className="text-lg">Spotify</CardTitle>
                       </div>
-                      <a href="https://github.com/jelte1/SpotiFLAC-Command-Line-Interface" target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <a
+                        href="https://github.com/jelte1/SpotiFLAC-Command-Line-Interface"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
                         <SiGithub className="w-3.5 h-3.5" /> SpotiFLAC
                       </a>
                     </div>
                     <CardDescription>
-                      Downloads FLAC via SpotiFLAC using Tidal, Qobuz, Deezer, or Amazon Music.
+                      Downloads FLAC via SpotiFLAC using Tidal, Qobuz, Deezer,
+                      or Amazon Music.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-
                     {/* SpotiFLAC path - hidden in Docker (pre-installed) */}
                     {isDockerMode ? (
                       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
                         <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
                         <div>
-                          <p className="text-sm font-medium">SpotiFLAC is pre-installed</p>
+                          <p className="text-sm font-medium">
+                            SpotiFLAC is pre-installed
+                          </p>
                           <code className="text-xs text-muted-foreground font-mono">
-                            {serverConfig?.spotiflacPath ?? "/opt/spotiflac/launcher.py"}
+                            {serverConfig?.spotiflacPath ??
+                              "/opt/spotiflac/launcher.py"}
                           </code>
                         </div>
                       </div>
@@ -1801,111 +2150,178 @@ function App() {
                         </Label>
                         <Input
                           value={config.spotify.spotiflacPath}
-                          onChange={(e) => setSpotify("spotiflacPath", e.target.value)}
+                          onChange={(e) =>
+                            setSpotify("spotiflacPath", e.target.value)
+                          }
                           placeholder="/opt/SpotiFLAC/SpotiFLAC-Linux-x64  or  /opt/SpotiFLAC/launcher.py"
                           className="bg-background font-mono text-sm"
                         />
                         <p className="text-xs text-muted-foreground">
                           For a binary, make sure it's executable:{" "}
-                          <code className="font-mono bg-muted px-1 rounded">chmod +x /path/to/SpotiFLAC</code>
+                          <code className="font-mono bg-muted px-1 rounded">
+                            chmod +x /path/to/SpotiFLAC
+                          </code>
                         </p>
                       </div>
                     )}
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Music Service</Label>
-                      <Select value={config.spotify.spotiflacService} onValueChange={(v) => setSpotify("spotiflacService", v)}>
-                        <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Music Service
+                      </Label>
+                      <Select
+                        value={config.spotify.spotiflacService}
+                        onValueChange={(v) => setSpotify("spotiflacService", v)}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="tidal">Tidal</SelectItem>
                           <SelectItem value="qobuz">Qobuz</SelectItem>
                           <SelectItem value="deezer">Deezer</SelectItem>
                           <SelectItem value="amazon">Amazon Music</SelectItem>
-                          <SelectItem value="tidal qobuz">Tidal → Qobuz (fallback)</SelectItem>
-                          <SelectItem value="tidal qobuz deezer">Tidal → Qobuz → Deezer</SelectItem>
+                          <SelectItem value="tidal qobuz">
+                            Tidal → Qobuz (fallback)
+                          </SelectItem>
+                          <SelectItem value="tidal qobuz deezer">
+                            Tidal → Qobuz → Deezer
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Output Format</Label>
-                      <Select value={config.spotify.spotiflacOutputFormat} onValueChange={(v) => setSpotify("spotiflacOutputFormat", v)}>
-                        <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Output Format
+                      </Label>
+                      <Select
+                        value={config.spotify.spotiflacOutputFormat}
+                        onValueChange={(v) =>
+                          setSpotify("spotiflacOutputFormat", v)
+                        }
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="flac">FLAC - lossless (default, no transcoding)</SelectItem>
-                          <SelectItem value="opus">Opus - lossy via FFmpeg (~320 kbps)</SelectItem>
-                          <SelectItem value="mp3">MP3 - lossy via FFmpeg (VBR best)</SelectItem>
+                          <SelectItem value="flac">
+                            FLAC - lossless (default, no transcoding)
+                          </SelectItem>
+                          <SelectItem value="opus">
+                            Opus - lossy via FFmpeg (~320 kbps)
+                          </SelectItem>
+                          <SelectItem value="mp3">
+                            MP3 - lossy via FFmpeg (VBR best)
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       {config.spotify.spotiflacOutputFormat !== "flac" && (
                         <p className="text-xs text-amber-500/90 bg-amber-500/10 border border-amber-500/20 rounded-md px-3 py-2">
-                          ⚠️ Transcoding with FFmpeg runs after the download finishes and may take significant additional time for large playlists. Metadata is preserved.
+                          ⚠️ Transcoding with FFmpeg runs after the download
+                          finishes and may take significant additional time for
+                          large playlists. Metadata is preserved.
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Filename Format</Label>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Filename Format
+                      </Label>
                       <Input
                         value={config.spotify.spotiflacFilenameFormat}
-                        onChange={(e) => setSpotify("spotiflacFilenameFormat", e.target.value)}
+                        onChange={(e) =>
+                          setSpotify("spotiflacFilenameFormat", e.target.value)
+                        }
                         placeholder="{track_number} {title} - {artist}"
                         className="bg-background font-mono text-sm"
                       />
                       <p className="text-xs text-muted-foreground">
                         Tokens:{" "}
-                        {["{title}", "{artist}", "{album}", "{track_number}", "{year}", "{isrc}"].map((t) => (
-                          <code key={t} className="font-mono bg-muted px-1 rounded mr-1">{t}</code>
+                        {[
+                          "{title}",
+                          "{artist}",
+                          "{album}",
+                          "{track_number}",
+                          "{year}",
+                          "{isrc}",
+                        ].map((t) => (
+                          <code
+                            key={t}
+                            className="font-mono bg-muted px-1 rounded mr-1"
+                          >
+                            {t}
+                          </code>
                         ))}
                       </p>
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Subfolder Organisation</Label>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Subfolder Organisation
+                      </Label>
                       <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
                         <div className="space-y-0.5 pr-4">
                           <Label className="text-sm">Artist Subfolders</Label>
-                          <p className="text-xs text-muted-foreground">library/<em>Artist</em>/tracks</p>
+                          <p className="text-xs text-muted-foreground">
+                            library/<em>Artist</em>/tracks
+                          </p>
                         </div>
                         <Switch
                           checked={config.spotify.spotiflacArtistSubfolders}
-                          onCheckedChange={(v) => setSpotify("spotiflacArtistSubfolders", v)}
+                          onCheckedChange={(v) =>
+                            setSpotify("spotiflacArtistSubfolders", v)
+                          }
                         />
                       </div>
                       <div className="flex items-center justify-between rounded-lg border p-3 bg-background/50">
                         <div className="space-y-0.5 pr-4">
                           <Label className="text-sm">Album Subfolders</Label>
-                          <p className="text-xs text-muted-foreground">library/<em>Album</em>/tracks</p>
+                          <p className="text-xs text-muted-foreground">
+                            library/<em>Album</em>/tracks
+                          </p>
                         </div>
                         <Switch
                           checked={config.spotify.spotiflacAlbumSubfolders}
-                          onCheckedChange={(v) => setSpotify("spotiflacAlbumSubfolders", v)}
+                          onCheckedChange={(v) =>
+                            setSpotify("spotiflacAlbumSubfolders", v)
+                          }
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Retry Loop (minutes)</Label>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Retry Loop (minutes)
+                      </Label>
                       <Input
                         type="number"
                         min={0}
                         value={config.spotify.spotiflacLoop}
-                        onChange={(e) => setSpotify("spotiflacLoop", parseInt(e.target.value) || 0)}
+                        onChange={(e) =>
+                          setSpotify(
+                            "spotiflacLoop",
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
                         className="bg-background w-28"
                       />
                       <p className="text-xs text-muted-foreground">
-                        0 = no retry. Set e.g. 120 to keep retrying for 2 hours on failure.
+                        0 = no retry. Set e.g. 120 to keep retrying for 2 hours
+                        on failure.
                       </p>
                     </div>
-
                   </CardContent>
                 </Card>
 
                 {/* Bundled tools card - only shown in Docker mode */}
                 {isDockerMode && (
-                  <ToolsCard versions={toolVersions} onRefreshVersions={fetchVersions} />
+                  <ToolsCard
+                    versions={toolVersions}
+                    onRefreshVersions={fetchVersions}
+                  />
                 )}
-
               </div>
             )}
           </div>

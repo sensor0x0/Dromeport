@@ -2,7 +2,7 @@
 
 A self-hosted music downloader built with [Navidrome](https://www.navidrome.org/) in mind. It wraps yt-dlp and SpotiFLAC-CLI into a clean web UI.
 
-> Dromeport is in beta. If you run into any bugs / issues, please report them at [github.com/sensor0x0/Dromeport/issues](https://github.com/sensor0x0/Dromeport/issues).
+> Dromeport is in beta. If you run into any bugs / issues, please report them at [github.com/sensor0x0/Dromeport/issues](https://github.com/sensor0x0/dromeport/issues).
 
 ---
 
@@ -69,7 +69,7 @@ Per new library you add, you must `+1` to the `*` in `DROMEPORT_LIBRARY_*` other
 
 ## Issues and Improvements
 
-Dromeport is currently in beta. If something breaks or doesn't work as expected, or you would just like to request an improvement, please open an issue at [github.com/sensor0x0/Dromeport/issues](https://github.com/sensor0x0/Dromeport/issues).
+Dromeport is currently in beta. If something breaks or doesn't work as expected, or you would just like to request an improvement, please open an issue at [github.com/sensor0x0/dromeport/issues](https://github.com/sensor0x0/dromeport/issues).
 
 ---
 
