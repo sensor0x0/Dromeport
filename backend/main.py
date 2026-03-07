@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import json
 import os
 import pathlib
@@ -81,7 +82,7 @@ async def tools_versions():
 
     ytdlp_version = await run_cmd("yt-dlp", "--version")
 
-    spotiflac_version = await run_cmd("pip", "show", "SpotiFLAC")
+    spotiflac_version = await run_cmd(sys.executable, "-m", "pip", "show", "SpotiFLAC")
     # "pip show" output contains "Version: x.y.z" — extract just that line
     for line in spotiflac_version.splitlines():
         if line.lower().startswith("version:"):
@@ -118,7 +119,7 @@ async def update_tools():
 
         yield "data: Updating yt-dlp...\n\n"
         try:
-            async for chunk in run_streaming("pip", "install", "--no-cache-dir", "-U", "yt-dlp"):
+            async for chunk in run_streaming(sys.executable, "-m", "pip", "install", "--no-cache-dir", "--user", "-U", "yt-dlp"):
                 yield chunk
             yield "data: yt-dlp updated.\n\n"
         except Exception as exc:
@@ -128,7 +129,7 @@ async def update_tools():
 
         yield "data: Updating SpotiFLAC...\n\n"
         try:
-            async for chunk in run_streaming("pip", "install", "--no-cache-dir", "-U", "SpotiFLAC"):
+            async for chunk in run_streaming(sys.executable, "-m", "pip", "install", "--no-cache-dir", "--user", "-U", "SpotiFLAC"):
                 yield chunk
             yield "data: SpotiFLAC updated.\n\n"
         except Exception as exc:

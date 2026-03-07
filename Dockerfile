@@ -32,6 +32,9 @@ RUN useradd -m -u 1000 dromeport \
     && chown -R dromeport:dromeport /app
 USER dromeport
 
+# Ensure user-local pip-installed scripts (e.g. updated yt-dlp) are on PATH
+ENV PATH="/home/dromeport/.local/bin:${PATH}"
+
 EXPOSE 8080
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
