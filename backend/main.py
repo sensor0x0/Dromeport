@@ -1,23 +1,16 @@
-import asyncio
-import sys
-import json
-import os
 import pathlib
-import uuid
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from providers.ytmusic import download_ytmusic_stream
-from providers.spotify import download_spotify_stream
 from sync import SyncManager
+from config import router as config_router
+from tools import router as tools_router
+from download import router as download_router, get_active_jobs
+from search import router as search_router
+from sync_api import setup_sync_routes
 
-
-_active_jobs: dict[str, dict[str, Any]] = {}
 
 sync_manager = SyncManager()
 
@@ -39,275 +32,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(config_router)
+app.include_router(tools_router)
+app.include_router(download_router)
+app.include_router(search_router)
 
-# Startup config
+sync_router = setup_sync_routes(sync_manager)
+app.include_router(sync_router)
 
-@app.get("/api/config")
-async def get_config():
-    libraries: list[dict[str, str]] = []
-    i = 1
-    while True:
-        raw = os.environ.get(f"DROMEPORT_LIBRARY_{i}")
-        if raw is None:
-            break
-        parts = raw.split("|", 1)
-        path = parts[0].strip()
-        default_name = (
-            parts[1].strip()
-            if len(parts) > 1 and parts[1].strip()
-            else os.path.basename(path.rstrip("/")) or path
-        )
-        if path:
-            libraries.append({"path": path, "defaultName": default_name})
-        i += 1
-
-    return {"libraries": libraries}
-
-
-# Tool versions
-
-@app.get("/api/tools/versions")
-async def tools_versions():
-    async def run_cmd(*cmd: str) -> str:
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-            )
-            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
-            return stdout.decode("utf-8", errors="replace").strip()
-        except Exception:
-            return ""
-
-    ytdlp_version = await run_cmd("yt-dlp", "--version")
-
-    spotiflac_version = await run_cmd(sys.executable, "-m", "pip", "show", "SpotiFLAC")
-    # "pip show" output contains "Version: x.y.z" — extract just that line
-    for line in spotiflac_version.splitlines():
-        if line.lower().startswith("version:"):
-            spotiflac_version = line.split(":", 1)[1].strip()
-            break
-    else:
-        spotiflac_version = "unknown"
-
-    return {
-        "ytdlp": ytdlp_version or "unknown",
-        "spotiflac": spotiflac_version,
-    }
-
-
-# Tool updater
-
-@app.get("/api/tools/update")
-async def update_tools():
-    async def stream() -> AsyncGenerator[str, None]:
-
-        async def run_streaming(*cmd: str) -> AsyncGenerator[str, None]:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-                env={**os.environ, "PYTHONUNBUFFERED": "1"},
-            )
-            assert proc.stdout is not None
-            async for raw in proc.stdout:
-                line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
-                if line:
-                    yield f"data: {line}\n\n"
-            await proc.wait()
-
-        yield "data: Updating yt-dlp...\n\n"
-        try:
-            async for chunk in run_streaming(sys.executable, "-m", "pip", "install", "--no-cache-dir", "--user", "-U", "yt-dlp"):
-                yield chunk
-            yield "data: yt-dlp updated.\n\n"
-        except Exception as exc:
-            yield f"data: yt-dlp update failed: {exc}\n\n"
-
-        yield "data: \n\n"
-
-        yield "data: Updating SpotiFLAC...\n\n"
-        try:
-            async for chunk in run_streaming(sys.executable, "-m", "pip", "install", "--no-cache-dir", "--user", "-U", "SpotiFLAC"):
-                yield chunk
-            yield "data: SpotiFLAC updated.\n\n"
-        except Exception as exc:
-            yield f"data: SpotiFLAC update failed: {exc}\n\n"
-
-        yield "data: \n\n"
-        yield "data: [DONE]\n\n"
-
-    return StreamingResponse(
-        stream(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
-# Helpers
-
-def _cleanup_partial_files(library_path: str) -> int:
-    count = 0
-    try:
-        for pattern in ("**/*.part", "**/*.ytdl"):
-            for f in pathlib.Path(library_path).glob(pattern):
-                try:
-                    f.unlink()
-                    count += 1
-                except OSError:
-                    pass
-    except Exception:
-        pass
-    return count
-
-
-# Download stream
-
-@app.get("/api/download/stream")
-async def stream_download(
-    url: str,
-    provider: str,
-    config: str,
-    playlist_folder: str = "",
-):
-    async def error_stream(message: str):
-        yield f"data: {message}\n\n"
-        yield "data: [DONE]\n\n"
-
-    try:
-        config_dict: dict = json.loads(config)
-    except (json.JSONDecodeError, ValueError):
-        return StreamingResponse(
-            error_stream("Invalid config payload."), media_type="text/event-stream"
-        )
-
-    library_path: str = config_dict.get("libraryPath", "").strip()
-    if not library_path:
-        return StreamingResponse(
-            error_stream("Library path is empty. Set it in Configuration."),
-            media_type="text/event-stream",
-        )
-    if not os.path.isabs(library_path):
-        return StreamingResponse(
-            error_stream(f"'{library_path}' is not an absolute path."),
-            media_type="text/event-stream",
-        )
-
-    if playlist_folder.strip():
-        config_dict["_playlist_folder"] = playlist_folder.strip()
-
-    job_id = str(uuid.uuid4())
-
-    if provider == "YouTube Music":
-        generator = download_ytmusic_stream(url, config_dict, job_id, _active_jobs)
-    elif provider == "Spotify":
-        generator = download_spotify_stream(url, config_dict, job_id, _active_jobs)
-    else:
-        return StreamingResponse(
-            error_stream(f"Unknown provider: '{provider}'."),
-            media_type="text/event-stream",
-        )
-
-    async def stream_with_lifecycle():
-        yield f'event: meta\ndata: {json.dumps({"type": "job_id", "value": job_id})}\n\n'
-        try:
-            async for chunk in generator:
-                yield chunk
-        except Exception:
-            yield "data: Stream interrupted.\n\n"
-            yield "data: [DONE]\n\n"
-        finally:
-            _active_jobs.pop(job_id, None)
-
-    return StreamingResponse(
-        stream_with_lifecycle(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
-# Cancel
-
-@app.delete("/api/download/{job_id}")
-async def cancel_download(job_id: str, library_path: str = ""):
-    job = _active_jobs.get(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found or already finished.")
-
-    process = job["process"]
-    job_provider: str = job.get("provider", "")
-    job_library_path: str = library_path or job.get("library_path", "")
-
-    try:
-        process.terminate()
-        await asyncio.wait_for(process.wait(), timeout=5.0)
-    except (asyncio.TimeoutError, ProcessLookupError):
-        try:
-            process.kill()
-        except ProcessLookupError:
-            pass
-
-    _active_jobs.pop(job_id, None)
-
-    cleaned = 0
-    if job_provider == "ytmusic" and job_library_path and os.path.isdir(job_library_path):
-        cleaned = _cleanup_partial_files(job_library_path)
-
-    return {"status": "cancelled", "partial_files_deleted": cleaned}
-
-
-# Sync playlists
-
-@app.get("/api/sync/playlists")
-async def list_sync_playlists():
-    return sync_manager.list_playlists()
-
-
-@app.post("/api/sync/playlists")
-async def add_sync_playlist(data: dict):
-    try:
-        playlist = sync_manager.add_playlist(data)
-        return playlist
-    except (KeyError, ValueError) as e:
-        raise HTTPException(status_code=422, detail=str(e))
-
-
-@app.put("/api/sync/playlists/{pid}")
-async def update_sync_playlist(pid: str, data: dict):
-    result = sync_manager.update_playlist(pid, data)
-    if result is None:
-        raise HTTPException(status_code=404, detail="Playlist not found.")
-    return result
-
-
-@app.delete("/api/sync/playlists/{pid}")
-async def delete_sync_playlist(pid: str):
-    if not sync_manager.delete_playlist(pid):
-        raise HTTPException(status_code=404, detail="Playlist not found.")
-    return {"status": "deleted"}
-
-
-@app.get("/api/sync/playlists/{pid}/run")
-async def run_sync_playlist(pid: str):
-    playlist = sync_manager.get_playlist(pid)
-    if not playlist:
-        raise HTTPException(status_code=404, detail="Playlist not found.")
-    return StreamingResponse(
-        sync_manager.run_sync_stream(pid),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
-# Static files
 
 _static_dir = pathlib.Path(__file__).parent / "static"
 if _static_dir.is_dir():
     app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="frontend")
 
-
-# Entry point
 
 if __name__ == "__main__":
     import uvicorn

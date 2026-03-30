@@ -23,11 +23,11 @@ export function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 Dromeport
               </span>
               <span className="text-xs text-muted-foreground font-medium">
-                v0.2.0-beta
+                v0.3.0-beta
               </span>
             </div>
 
-            {/* Desktop nav - hidden on mobile */}
+            {/* Desktop nav hidden on mobile */}
             <nav className="hidden sm:flex items-center gap-6 text-sm font-medium">
               <button
                 onClick={() => setActiveTab("download")}
