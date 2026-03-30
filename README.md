@@ -17,7 +17,7 @@ A self-hosted music downloader built with [Navidrome](https://www.navidrome.org/
 <details>
 <summary>Roadmap (click to expand)</summary>
 
-- [ ] Implement a search feature, so the user doesn't need to directly input a URL.
+- [X] Implement a search feature, so the user doesn't need to directly input a URL.
 - [ ] Fallback to using yt-dlp if SpotiFLAC fails, and vice versa.
 - [ ] Trigger a Navidrome rescan after finishing playlist / song download. [Subsonic API reference](https://www.navidrome.org/docs/developers/subsonic-api/)
 </details>
